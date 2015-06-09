@@ -1,5 +1,5 @@
 <?php
-namespace Cheatnut;
+namespace Cheatnut\Route;
 
 class Router {
 
