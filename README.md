@@ -14,11 +14,11 @@ Create index.php in your project with:
 
     $app = new Cheatnut\Cheatnut();
     
-    Router::get('/', function() {
+    Route::get('/', function() {
         echo "hello world";
     });
     
-    Router::get('/:name', function($name) {
+    Route::get('/:name', function($name) {
         echo "hello $name";
     });
 
