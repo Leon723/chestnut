@@ -4,6 +4,9 @@ namespace Cheatnut\Route;
 
 class Route {
 
+  /*
+  
+  */
   protected $pattern;
 
   protected $path;
@@ -51,7 +54,7 @@ class Route {
 
   public function setCallable($callable) {
     if(is_string($callable) && $matches = explode(':', $callable)) {
-      $class = $matches[0];
+      $class = 'App\\Controllers\\' . $matches[0];
       $method = $matches[1];
 
       $callable = function () use($class, $method) {
@@ -59,7 +62,7 @@ class Route {
         if($obj === null) {
           $obj = new $class;
         }
-        return call_user_func([$obj, $method], func_get_args());
+        return call_user_func_array([$obj, $method], func_get_args());
       };
     }
 
@@ -91,6 +94,11 @@ class Route {
         continue;
       }
 
+      if(isset($this->conditions[$name]) && ! preg_match('#' . $this->conditions[$name] . '#', $params[$key])) {
+        $this->params[$name] = null;
+        continue;
+      }
+
       $this->params[$name] = $params[$key];
     }
   }
@@ -105,8 +113,11 @@ class Route {
 
   public function appendHttpMethods() {
     $args = func_get_args();
-    if(count($args) && is_array($args[0])){
+    if(count($args) && is_array($args[0])) {
       $args = $args[0];
+    }
+    if(in_array('ANY', $args)) {
+      $args = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
     }
 
     $this->methods = array_merge($this->methods, $args);
@@ -116,6 +127,8 @@ class Route {
     $args = func_get_args();
 
     $this->appendHttpMethods($args);
+
+    return $this;
   }
 
   public function supportHttpMethod($method) {
@@ -123,18 +136,25 @@ class Route {
   }
 
 
-  public function matches($uri, $method) {
-    $uriPath = substr($uri, 0, strlen($this->path));
+  public function matches($request) {
+    $uriPath = substr($request->getUri(), 0, strlen($this->path));
     $uriPath = (substr($uriPath, -1) === '/' ? $uriPath : $uriPath . '/');
 
     if($this->path !== $uriPath) return false;
-    if(! $this->supportHttpMethod($method)) return false;
+    if(! $this->supportHttpMethod($request->getMethod())) return false;
 
-    $paramString = substr($uri, strlen($this->path));
+    $paramString = substr($request->getUri(), strlen($this->path));
 
     $this->setParams(explode('/', $paramString));
+    $request->appendParams($this->getParams());
 
     return true;
+  }
+
+  public function condition(Array $conditions) {
+    $this->setConditions($conditions);
+
+    return $this;
   }
 
   public function dispatch() {

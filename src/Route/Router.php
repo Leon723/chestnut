@@ -3,7 +3,7 @@ namespace Cheatnut\Route;
 
 class Router {
 
-  protected static $currentRoute;
+  protected static $current;
 
   protected static $routes = [];
 
@@ -18,21 +18,25 @@ class Router {
     return $route;
   }
 
-  public static function getRoute($resourceUri, $method) {
+  public static function match($request) {
 
     foreach(self::$routes as $route){
-      if($route->matches($resourceUri, $method)) {
-        self::$currentRoute = $route;
+      if($route->matches($request)) {
+        self::$current = $route;
         break;
       }
     }
   }
 
+  public static function current() {
+    return self::$current;
+  }
+
   public static function __callstatic($method, $params) {
-    self::addRoute($params)->via($method);
+    return self::addRoute($params)->via(strtoupper($method));
   }
 
   public static function dispatch() {
-    self::$currentRoute->dispatch();
+    self::$current->dispatch();
   }
 }
