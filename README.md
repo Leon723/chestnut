@@ -1,11 +1,14 @@
 # cheatnut
 yound's php framework
 
-# Install
+### Install
+
 Install with composer
 
     composer required "yound912/cheatnut:dev-master"
-  
+
+Create index.php in your project with:
+
     <?php
     require_once "../vendor/autoload.php";
 
