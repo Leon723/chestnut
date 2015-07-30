@@ -5,7 +5,8 @@
     "authors": [
         {
             "name": "yound",
-            "email": "yound@yound.com.cn"
+            "email": "yound@yound.com.cn",
+            "role": "DEVELOPER"
         }
     ],
     "version":"1.0.0",
