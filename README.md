@@ -15,11 +15,23 @@ Create index.php in your project with:
     $app = new Cheatnut\Core\Application();
 
     Route::get('/', function() {
-        echo "hello world";
+      echo "hello world";
     });
 
     Route::get('/:name', function($name) {
-        echo "hello $name";
+      echo "hello $name";
     });
 
     $app->run();
+
+Use ViewTemplateEngine
+
+    Route::get('/', function() {
+      return View::make('index');
+    });
+
+or
+
+    Route::get('/', function() {
+      return View::make('index', ['hello'=>'hello'])->world('World');
+    });
