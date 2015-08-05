@@ -39,7 +39,7 @@ class View
       return false;
     }
 
-    return true;
+    return false;
   }
 
   public function template()
@@ -51,8 +51,6 @@ class View
     if(! file_put_contents($this->cache, $content)) {
       throw new \Exception("编译模板文件出错");
     }
-
-    return $content;
   }
 
   public function display()
@@ -61,8 +59,6 @@ class View
 
     if(! $this->checkCache()) {
       $content = $this->template();
-
-      return $content;
     }
 
     ob_start();
@@ -78,9 +74,9 @@ class View
 
     if(array_key_exists('caseSensitive', $c) && $c['caseSensitive'])
     {
-      $this->property[$key] = $params[0];
+      $this->properties[$key] = $params[0];
     } else {
-      $this->property[strtolower($key)] = $params[0];
+      $this->properties[strtolower($key)] = $params[0];
     }
 
     return $this;
