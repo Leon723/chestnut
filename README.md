@@ -1,5 +1,5 @@
-# cheatnut
-yound's php framework
+# Chestnut
+Chestnut php framework
 
 ### Install
 
