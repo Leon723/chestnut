@@ -8,7 +8,7 @@ class View
 
   public function __construct()
   {
-    $c = \Cheatnut\Core\Registry::get('config');
+    $c = \Chestnut\Core\Registry::get('config');
 
     $this->path = $c['root'] . '../app/views/';
     $this->cache = $c['root'] . 'views/';
@@ -44,7 +44,7 @@ class View
 
   public function template()
   {
-    $engine = new \Cheatnut\Http\View\TemplateEngine($this->path);
+    $engine = new \Chestnut\Http\View\TemplateEngine($this->path);
 
     $content = $engine->make();
 
@@ -70,7 +70,7 @@ class View
 
   public function __call($key, $params)
   {
-    $c = \Cheatnut\Core\Registry::get('config');
+    $c = \Chestnut\Core\Registry::get('config');
 
     if(array_key_exists('caseSensitive', $c) && $c['caseSensitive'])
     {

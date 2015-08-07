@@ -7,7 +7,7 @@
     public function __construct($config = [])
     {
       Registry::register("config", function($defaults) use($config) {
-        return new \Cheatnut\Core\Config($defaults, $config);
+        return new \Chestnut\Core\Config($defaults, $config);
       });
 
       $this->__initialize();
@@ -17,21 +17,21 @@
     {
       $this->config = Registry::get('config', [
         'alias'=> [
-          'Route'=> '\Cheatnut\Http\Route\RouteProvider',
-          'App\Controllers\Registry'=> '\Cheatnut\Core\Registry',
-          'App\Controllers\Request'=> '\Cheatnut\Http\Request\RequestProvider',
-          'App\Controllers\Controller'=> '\Cheatnut\Http\Controller',
-          'App\Controllers\View'=> '\Cheatnut\Http\View\ViewProvider'
+          'Route'=> '\Chestnut\Http\Route\RouteProvider',
+          'App\Controllers\Registry'=> '\Chestnut\Core\Registry',
+          'App\Controllers\Request'=> '\Chestnut\Http\Request\RequestProvider',
+          'App\Controllers\Controller'=> '\Chestnut\Http\Controller',
+          'App\Controllers\View'=> '\Chestnut\Http\View\ViewProvider'
         ],
         'registry'=> [
           'request'=> function() {
-            return \Cheatnut\Http\Request\RequestProvider::getInstantce();
+            return \Chestnut\Http\Request\RequestProvider::getInstantce();
           },
           'route'=> function() {
-            return new \Cheatnut\Http\Route\RouteProvider();
+            return new \Chestnut\Http\Route\RouteProvider();
           },
           'response'=> function() {
-            return new \Cheatnut\Http\Response\ResponseProvider();
+            return new \Chestnut\Http\Response\ResponseProvider();
           }
         ]
       ]);
@@ -90,9 +90,9 @@
       if(headers_sent() === false)
       {
         if(strpos(PHP_SAPI, 'cgi') === 0) {
-          header(sprintf('Status: %s', \Cheatnut\Http\Response\Response::getMessageForCode($status)));
+          header(sprintf('Status: %s', \Chestnut\Http\Response\Response::getMessageForCode($status)));
         } else {
-          header(sprintf('HTTP/1.1 %s', \Cheatnut\Http\Response\Response::getMessageForCode($status)));
+          header(sprintf('HTTP/1.1 %s', \Chestnut\Http\Response\Response::getMessageForCode($status)));
         }
 
         foreach($header as $name => $value) {

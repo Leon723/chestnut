@@ -75,7 +75,7 @@
     public function dispatch() {
       $result = $this->current->dispatch();
 
-      if($result instanceof \Cheatnut\Http\View\View) {
+      if($result instanceof \Chestnut\Http\View\View) {
         return $result->display();
       }
 
