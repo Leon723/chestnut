@@ -19,9 +19,9 @@ class TemplateEngine
   public function parse()
   {
     $regs = [
-      "parseVar"=> '#{{ *\$([\w]+)( *[\+\-\*\/\.\=]?)( *.+ *)?}}#',
-      "parseFor"=> '#{{ *for *\$(\w+) *in *\$(\w+) *(as *\$(\w+))? *}}#',
-      'parseIf'=> '#{{ *(if) *(\(.+\){1}) *}}|{{ *(elseif) *\(.+\){1} *}}|{{ *(else) *}}#',
+      "parseVar"=> '#{{ *\$([\w]+) *([\+\-\*\/\.\=]?) *(.+)? *}}#',
+      "parseFor"=> '#{{ *for *(\$\w+|(?:\((\$\w+), (\$\w+))\)) *in *(\$\w) *}}#',
+      'parseIf'=> '#{{ *(if) *(\(.+\){1}) *}}|{{ *(elseif) *(\(.+\){1}) *}}|{{ *(else) *}}#',
       "parseEnd"=> '#{{ *end *}}#'
     ];
 
@@ -36,10 +36,10 @@ class TemplateEngine
   {
     $result = "<?php echo \$$m[1]";
 
-    if(trim($m[2]) !== "" && (! array_key_exists(3, $m) || trim($m[3]) === "")) {
+    if($m[2] !== "" && (! array_key_exists(3, $m) || $m[3] === "")) {
       throw new \RuntimeException("输出公式有误，请检查，运算符号后需要输入内容");
-    } elseif(trim($m[2]) !== "" && trim($m[3]) !== "") {
-      $result .= trim($m[2]) . ' ' . trim($m[3]);
+    } elseif($m[2] !== "" && $m[3] !== "") {
+      $result .= ' ' . $m[2] . ' ' . trim($m[3]);
     }
 
     $result .= "; ?>";
@@ -51,11 +51,13 @@ class TemplateEngine
   {
     $result = "";
 
-    if($m[3] === "as \$$m[4]") {
-      $result .= "<?php foreach(\$$m[2] as \$$m[4]=> \$$m[1]) { ?>";
+    if(trim($m[2]) !== "" && trim($m[3]) !== "") {
+      $result .= "<?php foreach($m[4] as $m[2]=> $m[3]) {";
     }else {
-      $result .= "<?php foreach(\$$m[2] as \$$m[1]) { ?>";
+      $result .= "<?php foreach($m[4] as $m[1]) {";
     }
+
+    $result .= " ?>";
 
     return $result;
   }
@@ -67,8 +69,11 @@ class TemplateEngine
     if($m[1] === 'else') {
       $result .= '<?php else {';
     }
+    elseif(isset($m[3])) {
+      $result .=  "<?php } $m[3] $m[4] {";
+    }
     else {
-      $result .=  "<?php $m[1] $m[2] {";
+      $result .= "<?php $m[1] $m[2] {";
     }
 
     $result .= " ?>";

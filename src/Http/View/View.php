@@ -17,7 +17,7 @@ class View
   public function setFile($filename)
   {
     $this->path .= $filename . '.php';
-    $this->cache .= md5($filename) . '.php';
+    $this->cache .= md5($filename);
 
     return $this;
   }
