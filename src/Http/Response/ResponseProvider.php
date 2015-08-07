@@ -1,4 +1,4 @@
-<?php namespace Cheatnut\Http\Response;
+<?php namespace Chestnut\Http\Response;
 
 class ResponseProvider
 {

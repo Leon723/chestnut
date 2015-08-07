@@ -1,4 +1,4 @@
-<?php namespace Cheatnut\Core;
+<?php namespace Chestnut\Core;
 
   class Registry
   {

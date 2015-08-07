@@ -1,4 +1,4 @@
-<?php namespace Cheatnut\Http\View;
+<?php namespace Chestnut\Http\View;
 
 class ViewProvider
 {
@@ -7,7 +7,7 @@ class ViewProvider
     $view = new View();
 
     $view->setFile($path)->data($data);
-    
+
     return $view;
   }
 }

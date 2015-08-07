@@ -1,6 +1,6 @@
-<?php namespace Cheatnut\Http\Route;
+<?php namespace Chestnut\Http\Route;
 
-  use \Cheatnut\Core\Registry;
+  use \Chestnut\Core\Registry;
 
   class RouteProvider
   {

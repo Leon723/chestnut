@@ -1,4 +1,4 @@
-<?php namespace Cheatnut\Core;
+<?php namespace Chestnut\Core;
 
 class Config implements \ArrayAccess, \Countable, \IteratorAggregate
 {

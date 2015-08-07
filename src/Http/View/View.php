@@ -1,4 +1,4 @@
-<?php namespace Cheatnut\Http\View;
+<?php namespace Chestnut\Http\View;
 
 class View
 {

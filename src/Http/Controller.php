@@ -1,4 +1,4 @@
-<?php namespace Cheatnut\Http;
+<?php namespace Chestnut\Http;
 
 abstract class Controller
 {

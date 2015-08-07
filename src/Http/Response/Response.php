@@ -1,5 +1,5 @@
 <?php
-  namespace Cheatnut\Http\Response;
+  namespace Chestnut\Http\Response;
 
   class Response implements \ArrayAccess, \Countable, \IteratorAggregate
   {

@@ -1,4 +1,4 @@
-<?php namespace Cheatnut\Http\Request;
+<?php namespace Chestnut\Http\Request;
 
   class Request implements \ArrayAccess, \IteratorAggregate
   {

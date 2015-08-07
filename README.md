@@ -12,7 +12,7 @@ Create index.php in your project with:
     <?php
     require_once "../vendor/autoload.php";
 
-    $app = new Cheatnut\Core\Application();
+    $app = new Chestnut\Core\Application();
 
     Route::get('/', function() {
       echo "hello world";
