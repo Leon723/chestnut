@@ -5,7 +5,7 @@ Chestnut php framework
 
 Install with composer
 
-    composer required "yound912/chestnut:1.0.0"
+    composer required "yound912/chestnut:1.0.1"
 
 Create index.php in your project with:
 
