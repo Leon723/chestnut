@@ -1,11 +1,11 @@
 {
-    "name": "yound912/chestnut",
-    "description": "yound912's php framework practice",
+    "name": "Leon723/chestnut",
+    "description": "Chestnut PHP Framework",
     "license": "MIT",
     "authors": [
         {
-            "name": "yound",
-            "email": "yound@yound.com.cn",
+            "name": "LeonZhang",
+            "email": "33543015@qq.com",
             "role": "DEVELOPER"
         }
     ],
