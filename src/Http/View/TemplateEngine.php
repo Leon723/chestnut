@@ -11,18 +11,18 @@ class TemplateEngine
 
   public function make()
   {
-    $this->parse();
+    $this->_parse();
 
     return $this->content;
   }
 
-  public function parse()
+  private function _parse()
   {
     $regs = [
-      "parseVar"=> '#{{ *\$([\w]+) *([\+\-\*\/\.\=]?) *(.+)? *}}#',
-      "parseFor"=> '#{{ *for *(\$\w+|(?:\((\$\w+), (\$\w+))\)) *in *(\$\w) *}}#',
-      'parseIf'=> '#{{ *(if) *(\(.+\){1}) *}}|{{ *(elseif) *(\(.+\){1}) *}}|{{ *(else) *}}#',
-      "parseEnd"=> '#{{ *end *}}#'
+      "_parseVar"=> '#{{ *(\".+\"|\$[\w]+)( *\->?|[\+\-\*\/\.\=]?)( *.+)? *}}#',
+      "_parseFor"=> '#{{ *for *(\$\w+|(?:\((\$\w+), (\$\w+))\)) *in *(\$\w+) *}}#',
+      '_parseIf'=> '#{{ *(if) *(\(.+\){1}) *}}|{{ *(elseif) *(\(.+\){1}) *}}|{{ *(else) *}}#',
+      "_parseEnd"=> '#{{ *end *}}#'
     ];
 
     foreach($regs as $type => $reg) {
@@ -32,14 +32,14 @@ class TemplateEngine
     }
   }
 
-  private function parseVar($m)
+  private function _parseVar($m)
   {
-    $result = "<?php echo \$$m[1]";
+    $result = "<?php echo $m[1]";
 
     if($m[2] !== "" && (! array_key_exists(3, $m) || $m[3] === "")) {
       throw new \RuntimeException("输出公式有误，请检查，运算符号后需要输入内容");
     } elseif($m[2] !== "" && $m[3] !== "") {
-      $result .= ' ' . $m[2] . ' ' . trim($m[3]);
+      $result .= $m[2] . rtrim($m[3]);
     }
 
     $result .= "; ?>";
@@ -47,7 +47,7 @@ class TemplateEngine
     return $result;
   }
 
-  private function parseFor($m)
+  private function _parseFor($m)
   {
     $result = "";
 
@@ -62,7 +62,7 @@ class TemplateEngine
     return $result;
   }
 
-  private function parseIf($m)
+  private function _parseIf($m)
   {
     $result = "";
 
@@ -81,7 +81,7 @@ class TemplateEngine
     return $result;
   }
 
-  private function parseEnd($m)
+  private function _parseEnd($m)
   {
     return "<?php } ?>";
   }
