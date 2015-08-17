@@ -63,4 +63,19 @@
     {
       return $this->getMethod() === 'HEAD';
     }
+
+    public static function get($key)
+    {
+      return static::$instance->getParameter($key, 'get');
+    }
+
+    public static function post($key)
+    {
+      return static::$instance->getParameter($key, 'post');
+    }
+
+    public static function input($key)
+    {
+      return static::$instance->getParameter($key, 'input');
+    }
   }
