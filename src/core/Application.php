@@ -21,7 +21,8 @@
           'App\Controllers\Registry'=> '\Chestnut\Core\Registry',
           'App\Controllers\Request'=> '\Chestnut\Http\Request\RequestProvider',
           'App\Controllers\Controller'=> '\Chestnut\Http\Controller',
-          'App\Controllers\View'=> '\Chestnut\Http\View\ViewProvider'
+          'App\Controllers\View'=> '\Chestnut\Http\View\ViewProvider',
+          'App\Models\Nut' => '\Chestnut\Nut\Nut',
         ],
         'registry'=> [
           'request'=> function() {
