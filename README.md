@@ -5,7 +5,7 @@ Chestnut php framework
 
 Install with composer
 
-    composer required "leon723/chestnut:1.0.2"
+    composer required "leon723/chestnut:~0.2.*"
 
 Create index.php in your project with:
 
