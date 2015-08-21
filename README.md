@@ -5,33 +5,41 @@ Chestnut php framework
 
 Install with composer
 
-    composer required "leon723/chestnut:~0.2.*"
+```
+composer required "leon723/chestnut:~0.2.*"
+```
 
 Create index.php in your project with:
 
-    <?php
-    require_once "../vendor/autoload.php";
+```
+<?php
+require_once "../vendor/autoload.php";
 
-    $app = new Chestnut\Core\Application();
+$app = new Chestnut\Core\Application();
 
-    Route::get('/', function() {
-      echo "hello world";
-    });
+Route::get('/', function() {
+  echo "hello world";
+});
 
-    Route::get('/:name', function($name) {
-      echo "hello $name";
-    });
+Route::get('/:name', function($name) {
+  echo "hello $name";
+});
 
-    $app->run();
+$app->run();
+```
 
 Use ViewTemplateEngine
 
-    Route::get('/', function() {
-      return View::make('index');
-    });
+```
+Route::get('/', function() {
+  return View::make('index');
+});
+```
 
 or
 
-    Route::get('/', function() {
-      return View::make('index', ['hello'=>'hello'])->world('World');
-    });
+```
+Route::get('/', function() {
+  return View::make('index', ['hello'=>'hello'])->world('World');
+});
+```

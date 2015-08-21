@@ -2,83 +2,127 @@
 
 class TemplateEngine
 {
-  protected $content;
+  protected $layout;
+  protected $view;
+  protected $path;
+  protected $rootDir;
+  protected $section;
 
   public function __construct($path)
   {
-    $this->content = file_get_contents($path);
+    $this->path = $path;
+    $this->rootDir = \Chestnut\Core\Registry::get('config')->get('root') . "../app/views/";
   }
 
   public function make()
   {
-    $this->_parse();
+    $this->_getView();
+    $this->_getLayout();
 
-    return $this->content;
+    return $this->_parse();
+  }
+
+  private function _getView()
+  {
+    $this->view = file_get_contents($this->path);
+
+    preg_match_all("#<@section:(.*)>([\w\W]*?)<@\/section>#", $this->view, $m);
+
+    foreach($m[1] as $key=> $section) {
+      $this->_setSection($section, $m[2][$key]);
+    }
+  }
+
+  private function _setSection($section, $value)
+  {
+    if($this->section === null) {
+      $this->section = [];
+    }
+
+    $this->section[$section] = $value;
+  }
+
+  private function _getSection($section)
+  {
+    return $this->section[$section];
+  }
+
+  private function _getLayout()
+  {
+    preg_match("#<@layout:([\w\.]+)>#",$this->view, $m);
+
+    $layoutPath = count($m) ? join("/", explode(".", $m[1])) . ".php" : false;
+
+    if($layoutPath && file_exists($this->rootDir . $layoutPath)) {
+      $layout = file_get_contents($this->rootDir . $layoutPath);
+
+      $this->layout = $layout;
+    }
   }
 
   private function _parse()
   {
     $regs = [
-      "_parseVar"=> '#{{ *(\".+\"|\$[\w]+)( *\->?|[\+\-\*\/\.\=]?)( *.+)? *}}#',
-      "_parseFor"=> '#{{ *for *(\$\w+|(?:\((\$\w+), (\$\w+))\)) *in *(\$\w+) *}}#',
-      '_parseIf'=> '#{{ *(if) *(\(.+\){1}) *}}|{{ *(elseif) *(\(.+\){1}) *}}|{{ *(else) *}}#',
-      "_parseEnd"=> '#{{ *end *}}#'
+      "_parseFor"=> '#<@for:(\S*)\s*in\s*(\S*)>#',
+      "_parseIf"=> '#<@(if(?=\:)|elseif(?=\:)|else)(?:\:?(.*))>#',
+      "_parseVar"=> '#<@(\S*(?=\:))(?:\:(.*?|\[.*\]))>#',
+      "_parseEnd"=> '#<@/\S*>#'
     ];
 
-    foreach($regs as $type => $reg) {
-      $this->content = preg_replace_callback($reg, function($m) use($type){
-        return $this->$type($m);
-      }, $this->content);
+    if($this->layout) {
+      $content = preg_replace_callback("#<@section:(.*)>#", function($m){
+        return $this->_getSection($m[1]);
+      }, $this->layout);
+    } else {
+      $content = $this->view;
     }
+
+    foreach($regs as $type => $reg) {
+      $content = preg_replace_callback($reg, function($m) use($type){
+        return $this->$type($m);
+      }, $content);
+    }
+
+    return $content;
   }
 
   private function _parseVar($m)
   {
-    $result = "<?php echo $m[1]";
-
-    if($m[2] !== "" && (! array_key_exists(3, $m) || $m[3] === "")) {
-      throw new \RuntimeException("输出公式有误，请检查，运算符号后需要输入内容");
-    } elseif($m[2] !== "" && $m[3] !== "") {
-      $result .= $m[2] . rtrim($m[3]);
+    if(preg_match("#\[\S*\]#", $m[2])) {
+      return "<?php echo \$$m[1]$m[2]; ?>";
+    }elseif($m[1] === ""){
+      if(preg_match("#(\"|\')\S*(\"|\')#", $m[2])) {
+        $m[2] = "$m[2]";
+      } elseif(! (int) $m[2] && "" . (int) $m[2] !== $m[2]) {
+        $m[2] = "\$$m[2]";
+      }
+      return "<?php echo $m[2]; ?>";
+    } else {
+      return "<?php echo \$$m[1]->$m[2]; ?>";
     }
-
-    $result .= "; ?>";
-
-    return $result;
   }
 
   private function _parseFor($m)
   {
-    $result = "";
+    $item = explode(",", $m[1]);
+    $parent = $m[2];
 
-    if(trim($m[2]) !== "" && trim($m[3]) !== "") {
-      $result .= "<?php foreach($m[4] as $m[2]=> $m[3]) {";
-    }else {
-      $result .= "<?php foreach($m[4] as $m[1]) {";
-    }
-
-    $result .= " ?>";
-
-    return $result;
+    return "<?php foreach(\$$parent as \$" . join("=> $", $item) . ") { ?>";
   }
 
   private function _parseIf($m)
   {
-    $result = "";
-
-    if($m[1] === 'else') {
-      $result .= '<?php else {';
+    switch($m[1]) {
+      case "if":
+        return "<?php $m[1]($m[2]) { ?>";
+        break;
+      case "elseif":
+        return "<?php } $m[1]($m[2]) { ?>";
+        break;
+      case "else":
+        return "<?php } $m[1] { ?>";
+        break;
     }
-    elseif(isset($m[3])) {
-      $result .=  "<?php } $m[3] $m[4] {";
-    }
-    else {
-      $result .= "<?php $m[1] $m[2] {";
-    }
-
-    $result .= " ?>";
-
-    return $result;
   }
 
   private function _parseEnd($m)
