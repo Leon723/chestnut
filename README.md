@@ -1,15 +1,16 @@
 # Chestnut
-Chestnut php framework
+Chestnut PHP framework
 
-### Install
+## 安装
 
-Install with composer
+通过 [composer](http://www.phpcomposer.com/) 安装
+
 
 ```
-composer required "leon723/chestnut:~0.2.*"
+composer required "leon723/chestnut:~0.2.0"
 ```
 
-Create index.php in your project with:
+在项目根目录创建 index.php 并输入以下内容：
 
 ```
 <?php
@@ -28,18 +29,23 @@ Route::get('/:name', function($name) {
 $app->run();
 ```
 
-Use ViewTemplateEngine
+## 美化链接
+
+### Apache
 
 ```
-Route::get('/', function() {
-  return View::make('index');
-});
+Options +FollowSymLinks
+RewriteEngine On
+
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^ index.php [L]
 ```
 
-or
+### Nginx
 
 ```
-Route::get('/', function() {
-  return View::make('index', ['hello'=>'hello'])->world('World');
-});
+location / {
+    try_files $uri $uri/ /index.php?$query_string;
+}
 ```
