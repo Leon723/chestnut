@@ -63,6 +63,7 @@ class TemplateEngine
   private function _parse()
   {
     $regs = [
+      "_parseNote"=> '#<!-- *.* *-->#',
       "_parseFor"=> '#<@for:(\S*)\s*in\s*(\S*)>#',
       "_parseIf"=> '#<@(if(?=\:)|elseif(?=\:)|else)(?:\:?(.*))>#',
       "_parseVar"=> '#<@(\S*(?=\:))(?:\:(.*?|\[.*\]))>#',
@@ -84,6 +85,11 @@ class TemplateEngine
     }
 
     return $content;
+  }
+
+  private function _parseNote($m)
+  {
+    return "";
   }
 
   private function _parseVar($m)
