@@ -1,6 +1,8 @@
-<?php namespace Chestnut\Nut;
+<?php namespace Chestnut\Core\Nut;
 
-class SQLCreater extends \Chestnut\Core\Config
+use Chestnut\Core\Config\Config;
+
+class SQLCreater extends Config
 {
 
   /**
@@ -11,11 +13,11 @@ class SQLCreater extends \Chestnut\Core\Config
   public function set($key, $value)
   {
     if(is_array($value) && ! $this->has($key)) {
-      $this->property[$key] = [];
+      $this->attributes[$key] = [];
     }
 
     if(is_array($value)) {
-      $this->property[$key] = array_merge($this->property[$key], $value);
+      $this->attributes[$key] = array_merge($this->attributes[$key], $value);
       return;
     }
 
@@ -29,7 +31,7 @@ class SQLCreater extends \Chestnut\Core\Config
    */
   public function sizeof($key)
   {
-    return isset($this->property[$key]) ? count($this->property[$key]) : 0;
+    return $this->has($key) ? count($this->get($key)) : 0;
   }
 
   /**

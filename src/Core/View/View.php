@@ -1,4 +1,6 @@
-<?php namespace Chestnut\Http\View;
+<?php namespace Chestnut\Core\View;
+
+use Chestnut\Application;
 
 class View
 {
@@ -6,12 +8,10 @@ class View
   protected $path;
   protected $cache;
 
-  public function __construct()
+  public function __construct(Application $app)
   {
-    $c = \Chestnut\Core\Registry::get('config');
-
-    $this->path = $c['root'] . '../app/views/';
-    $this->cache = $c['root'] . 'views/';
+    $this->path = $app['path'] . DIRECTORY_SEPARATOR . 'views/';
+    $this->cache = $app->cachePath() . DIRECTORY_SEPARATOR . 'views/';
   }
 
   public function setFile($filename)
@@ -22,9 +22,28 @@ class View
     return $this;
   }
 
-  public function data(array $data = [])
+  public static function register($app)
   {
-    $this->properties = $data;
+    $app->register(static::class);
+  }
+
+  public function data(array $data)
+  {
+    if(is_null($this->properties)) {
+      $this->properties = $data;
+    } else {
+      foreach($data as $key=> $item) {
+        $this->properties[$key] = $item;
+      }
+    }
+
+    return $this;
+  }
+
+  public function make($filename, $data = [])
+  {
+    $this->setFile($filename);
+    $this->data($data);
 
     return $this;
   }
@@ -44,7 +63,7 @@ class View
 
   public function template()
   {
-    $engine = new \Chestnut\Http\View\TemplateEngine($this->path);
+    $engine = new TemplateEngine($this->path);
 
     $content = $engine->make();
 
@@ -58,21 +77,15 @@ class View
     extract($this->properties);
 
     if(! $this->checkCache()) {
-      $content = $this->template();
+      $this->template();
     }
-
-    ob_start();
-
+    
     require $this->cache;
-
-    return ob_get_clean();
   }
 
   public function __call($key, $params)
   {
-    $c = \Chestnut\Core\Registry::get('config');
-
-    if(array_key_exists('caseSensitive', $c) && $c['caseSensitive'])
+    if(config()->has('caseSensitive') && config('caseSensitive'))
     {
       $this->properties[$key] = $params[0];
     } else {

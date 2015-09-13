@@ -1,6 +1,4 @@
-<?php namespace Chestnut\Nut;
-
-use \Chestnut\Core\Registry;
+<?php namespace Chestnut\Core\Nut;
 
 class Nut implements \Countable, \IteratorAggregate
 {
@@ -19,9 +17,8 @@ class Nut implements \Countable, \IteratorAggregate
 
   /**
    * 模型名
-   * @var string
    */
-  protected $model;
+  protected $className;
 
   /**
    * 是否使用 Nut 默认的时间戳
@@ -33,7 +30,7 @@ class Nut implements \Countable, \IteratorAggregate
    * 是否为新建对象
    * @var boolean
    */
-  protected $isNew;
+  protected $exists;
 
   /**
    * ORM 数据集
@@ -54,46 +51,35 @@ class Nut implements \Countable, \IteratorAggregate
   protected $sql;
 
   /**
-   * Nut 单一实例
+   * Nut 实例数组
    * @var Nut
    */
-  protected static $instance = null;
+  protected $instances = [];
 
   /**
    * Nut ORM 构造函数
    */
-  public function __construct($isNew = true)
+  public function __construct($className, $exists = false)
   {
-    $className = explode("\\", get_class($this));
-
-    $this->model = array_pop($className);
+    $this->className = $className;
+    $className = explode("\\", $className);
 
     if(! isset($this->table))
     {
-      $prefix = Registry::get('config')->has("database")
-              ? Registry::get('config')->get('database')['mysql']['prefix']
-              : "";
+      $prefix = config('database.mysql.prefix', '');
 
-      $this->table = $prefix . strtolower(preg_replace("#((?<=[a-z])(?=[A-Z]))#", "_", $this->model)) . 's';
+      $this->table = $prefix . strtolower(preg_replace("#((?<=[a-z])(?=[A-Z]))#", "_", array_pop($className))) . 's';
     }
 
     $this->db = new Database($this->table);
     $this->sql = new SQLCreater();
     $this->sql->set('table', $this->table);
-    $this->isNew = $isNew;
+    $this->exists = $exists;
   }
 
-  /**
-   * 静态创建 Nut 实例
-   * @return Nut
-   */
-  private static function _make()
+  public static function register($app)
   {
-    if(static::$instance === null) {
-      return static::$instance = new static(false);
-    }
-
-    return static::$instance;
+    $app->register(static::class);
   }
 
   /**
@@ -128,47 +114,42 @@ class Nut implements \Countable, \IteratorAggregate
    */
   public function isNew()
   {
-    return $this->isNew;
+    return $this->exists;
   }
 
   /**
-   * 获取查询数据
-   * @return stdClass 查询数据
+   * 执行查询
+   * @param  string $sql 查询语句
    */
-  public function get()
+  public function execute($sql)
   {
-    $sql = $this->sql->createSelect();
-
     $this->db->query($sql);
     $this->db->execute($this->parameter);
+    if($err = $this->db->getError()) {
+      switch($err->code) {
+        case 42:
+          if(method_exists($this->className, 'create')) {
+            $this->db->clearError();
+            $tm = new TableManager($this->table);
+            call_user_func([$this->className, 'create'], $tm);
 
-    $this->property = $this->db->fetch(\PDO::FETCH_OBJ);
-
-    return $this;
-  }
-
-  /**
-   * 保存改变
-   */
-  public function save()
-  {
-    if($this->isNew()) {
-      $sql = $this->sql->createInsert(array_keys((array) $this->property));
-    } else {
-      $sql = $this->sql->createUpdate(array_keys((array) $this->property));
+            $this->execute($tm->create());
+            $this->execute($sql);
+          } else {
+            throw new \PDOException($err->message, $err->code);
+          }
+          break;
+        default:
+          throw new \PDOException($err->message, $err->code);
+      }
     }
-
-    $this->db->query($sql);
-    $this->db->execute((array) $this->property);
-
-    $this->property->id = $this->db->lastInsertId();
   }
 
   /**
    * 获取所有查询数据集
    * @param  string $type 获取类型，默认为stdClass
    */
-  public function fetchAll($type = null)
+  public function fetch($type = null)
   {
     switch($type) {
       case "array":
@@ -179,53 +160,108 @@ class Nut implements \Countable, \IteratorAggregate
         break;
     }
 
-    $this->property = $this->db->fetchAll($type);
+    if($this->db->count() > 1) {
+      $property = $this->db->fetchAll($type);
+    } else {
+      $property = $this->db->fetch($type);
+    }
+
+    $this->property = $property;
   }
+
+  /**
+   * 获取查询数据
+   * @return stdClass 查询数据
+   */
+  public function get($type = null)
+  {
+    $sql = $this->sql->createSelect();
+
+    $this->execute($sql);
+
+    $this->fetch($type);
+
+    return $this;
+  }
+
+
+  /**
+   * 保存更改
+   */
+  public function save()
+  {
+    if(! $this->isNew()) {
+      $sql = $this->sql->createInsert(array_keys((array) $this->property));
+    } else {
+      $sql = $this->sql->createUpdate(array_keys((array) $this->property));
+    }
+
+    $this->db->query($sql);
+    $this->db->execute((array) $this->property);
+
+    if($err = $this->db->getError()) {
+      throw new \PDOException($err->message, $err->code);
+    }
+
+    $this->id = $this->db->lastInsertId();
+  }
+
 
   /**
    * 获取第一条数据集
    * @param  string $type 获取类型，默认为stdClass
    */
-  public static function first($type = null)
+  public function first($type = null)
   {
-    $obj = static::_make();
-    $obj->_select("*");
+    $this->select("*");
 
-    $sql = $obj->sql->createSelect();
+    $sql = $this->sql->createSelect();
 
-    $obj->db->query($sql);
-    $obj->db->execute();
+    $this->execute($sql);
+    $this->fetch();
 
-    $obj->fetchAll($type);
+    return $this;
+  }
 
-    $obj->property = $obj->property[0];
+  /**
+   * 获取指定 ID 的数据
+   * @param  integer $id   指定数据的 ID
+   * @param  PDOFETCTType $type 指定的返回类型，默认为stdCalss
+   * @return Nut
+   */
+  public function findOne($id, $type = null)
+  {
+    $this->select("*")
+         ->where("id", $id);
 
-    return $obj;
+    $sql = $this->sql->createSelect();
+
+    $this->execute($sql);
+    $this->fetch($type);
+
+    return $this;
   }
 
   /**
    * 查找所有数据集
    */
-  public static function findAll()
+  public function findAll($type = null)
   {
-    $obj = static::_make();
-    $obj->_select("*");
+    $this->select("*");
 
-    $sql = $obj->sql->createSelect();
+    $sql = $this->sql->createSelect();
 
-    $obj->db->query($sql);
-    $obj->db->execute();
+    $this->execute($sql);
+    $this->fetch($type);
 
-    $obj->fetchAll();
-
-    return $obj;
+    return $this;
   }
 
   /**
    * 删除数据
    * @param  integer $id 数据ID
    */
-  private function _delete($id = null)
+  public function delete($id = null)
   {
     if($id === null) {
       $id = $this->property->id;
@@ -245,7 +281,7 @@ class Nut implements \Countable, \IteratorAggregate
    * @param  string $select 列名
    * @param  string $alias  别名
    */
-  private function _select($select, $alias = null)
+  public function select($select, $alias = null)
   {
     if(is_array($select)) {
       foreach($select as $key=> $value) {
@@ -272,7 +308,7 @@ class Nut implements \Countable, \IteratorAggregate
    * @param  string $value  列值
    * @param  string $link   连接方式，默认And
    */
-  private function _where($where, $symbol, $value = null, $link = null)
+  public function where($where, $symbol, $value = null, $link = null)
   {
     if($value === null && ! in_array(strtoupper($symbol), ["＝", "<>", "<", ">", ">=", "<=", "BETWEEN", "LIKE", "IN"]))
     {
@@ -304,7 +340,7 @@ class Nut implements \Countable, \IteratorAggregate
    * @param  string $order 排序列名
    * @param  boolean $desc  是否逆序排列
    */
-  private function _order($order, $desc = false)
+  public function order($order, $desc = false)
   {
     if($desc) {
       $order .= " DESC";
@@ -320,26 +356,10 @@ class Nut implements \Countable, \IteratorAggregate
    * @param  integer  $limit  限制值
    * @param  integer $offset 偏移值
    */
-  private function _limit($limit, $offset = 0)
+  public function limit($limit, $offset = 0)
   {
     $this->sql->set("limit", "LIMIT $offset, $limit");
     return $this;
-  }
-
-  public function __call($method, $parameters)
-  {
-    if(in_array($method, ['select', 'where', 'order', 'limit', 'delete'])) {
-      return call_user_func_array([$this, "_$method"], $parameters);
-    }
-  }
-
-  public static function __callStatic($method, $parameters)
-  {
-    $obj = static::_make();
-
-    if(in_array($method, ['select', 'where', 'order', 'limit', 'delete'])) {
-      return call_user_func_array([$obj, "_$method"], $parameters);
-    }
   }
 
   public function __get($key)
@@ -362,7 +382,7 @@ class Nut implements \Countable, \IteratorAggregate
 
   public function count()
   {
-    return $this->db->count();
+    return count($this->property);
   }
 
   public function getIterator()

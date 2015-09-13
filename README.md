@@ -7,7 +7,7 @@ Chestnut PHP framework
 
 
 ```
-composer required "leon723/chestnut:~0.3.0"
+composer required "leon723/chestnut:~0.4.0"
 ```
 
 在项目根目录创建 index.php 并输入以下内容：
@@ -16,7 +16,10 @@ composer required "leon723/chestnut:~0.3.0"
 <?php
 require_once "../vendor/autoload.php";
 
-$app = new Chestnut\Core\Application();
+/**
+ * 创建 Chestnut 实例
+ */
+$app = new Chestnut\Application(realpath("../"));
 
 Route::get('/', function() {
   echo "hello world";
@@ -26,7 +29,15 @@ Route::get('/:name', function($name) {
   echo "hello $name";
 });
 
-$app->run();
+/**
+ * 启动程序
+ */
+$app->boot();
+
+/**
+ * 运行程序
+ */
+$app->terminate();
 ```
 
 ## 美化链接
