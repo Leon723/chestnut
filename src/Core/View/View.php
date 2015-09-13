@@ -4,12 +4,14 @@ use Chestnut\Application;
 
 class View
 {
+  protected $app;
   protected $properties;
   protected $path;
   protected $cache;
 
   public function __construct(Application $app)
   {
+    $this->app = $app;
     $this->path = $app['path'] . DIRECTORY_SEPARATOR . 'views/';
     $this->cache = $app->cachePath() . DIRECTORY_SEPARATOR . 'views/';
   }
@@ -67,6 +69,11 @@ class View
 
     $content = $engine->make();
 
+    if(! file_exists($this->app->cachePath())) {
+      mkdir($this->app->cachePath(), "0777");
+      mkdir($this->app->cachePath() . DIRECTORY_SEPARATOR . "views");
+    }
+
     if(! file_put_contents($this->cache, $content)) {
       throw new \Exception("编译模板文件出错");
     }
@@ -79,7 +86,7 @@ class View
     if(! $this->checkCache()) {
       $this->template();
     }
-    
+
     require $this->cache;
   }
 
