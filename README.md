@@ -1,13 +1,13 @@
 # Chestnut
 Chestnut PHP framework
-
+代码重构中，请使用 0.4.0 版本的框架
 ## 安装
 
 通过 [composer](http://www.phpcomposer.com/) 安装
 
 
 ```
-composer required "leon723/chestnut:~0.4.0"
+composer required "leon723/chestnut:~0.5.0"
 ```
 
 在项目根目录创建 index.php 并输入以下内容：
