@@ -35,7 +35,7 @@ class ControllerResolver
     if(is_callable($this->controller)) {
       $reflector = new ReflectionFunction($this->controller);
     } else {
-      $controller = explode("@", $this->controller);
+      $controller = explode("::", $this->controller);
 
       switch(count($controller)) {
         case 2:
@@ -43,15 +43,15 @@ class ControllerResolver
           $this->controller = $reflector->getClosure(new $controller[0]);
           break;
         default:
-          $reflector = new ReflectionClass($this->controller);
-          $this->controller = $reflector = $reflector->getConstructor();
+          $this->controller = new ReflectionClass($controller[0]);
+          $reflector = $this->controller->getConstructor();
           break;
       }
     }
 
     foreach($reflector->getParameters() as $parameter) {
       if($parameter->getClass()) {
-        $this->dependencies[$parameter->name] = $parameter->getClass();
+        $this->dependencies[$parameter->name] = $parameter->getClass()->name;
       } elseif($parameter->isDefaultValueAvailable()) {
         $this->dependencies[$parameter->name] = $parameter->getDefaultValue();
       } else {
@@ -66,7 +66,7 @@ class ControllerResolver
       return call_user_func_array($this->controller, $dependencies);
     }
 
-    return $this->controller->newInstanceArgv($dependencies);
+    return $this->controller->newInstanceArgs($dependencies);
   }
 
   public function getDependencies()

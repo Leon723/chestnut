@@ -30,6 +30,6 @@ if(! function_exists('view')) {
 
 if(! function_exists('redirect')) {
   function redirect($url, $status = 302, $header = []) {
-    return app('Chestnut\Core\Response\Redirect', compact('url', 'status', 'header'))->send();
+    return app('response')->redirect($url, $status, $header);
   }
 }

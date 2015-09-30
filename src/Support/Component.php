@@ -33,6 +33,13 @@ class Component implements ArrayAccess
   protected $aliases;
 
   /**
+   * 容器实例
+   *
+   * @var Chestnut\Support\Component
+   */
+  protected static $instance;
+
+  /**
    * 构造组件容器
    */
   public function __construct()
@@ -54,6 +61,13 @@ class Component implements ArrayAccess
    */
   public function register($name, $builder = null, $share = false)
   {
+    if(is_array($name)) {
+      $alias = current($name);
+      $name = key($name);
+
+      $this->alias($alias, $name);
+    }
+
     if(is_null($builder)) {
       $builder = $name;
     }
@@ -124,14 +138,14 @@ class Component implements ArrayAccess
    */
   public function build($builder, $parameters = [])
   {
-    $cr = new ControllerResolver($builder);
-    $cr->resolve();
+    $resolver = new ControllerResolver($builder);
+    $resolver->resolve();
 
-    $dependencies = $cr->getDependencies();
+    $dependencies = $resolver->getDependencies();
     $instances = [];
 
     foreach($dependencies as $name=> $dependency) {
-      if($this->registered->has($dependency)) {
+      if(is_string($dependency) && $this->registered($dependency)) {
         $instances[$name] = $this[$dependency];
       } elseif(array_key_exists($name, $parameters)) {
         $instances[$name] = $parameters[$name];
@@ -140,7 +154,33 @@ class Component implements ArrayAccess
       }
     }
 
-    return $cr->build($instances);
+    return $resolver->build($instances);
+  }
+
+  /**
+   * 注册组件实例
+   *
+   * @param string  $name     组件名称
+   * @param mixed   $instance 组件实例
+   */
+  public function instance($name, $instance)
+  {
+    $name = $this->getAlias($name);
+
+    $this->instances[$name] = $instance;
+  }
+
+  /**
+   * 注册单例组件
+   *
+   * @param string              $name     组件名称
+   * @param Closure|string|null $builder  组件构造器
+   *
+   * @return void
+   */
+  public function singleton($name, $builder = null)
+  {
+    $this->register($name, $builder, true);
   }
 
   /**
@@ -242,6 +282,16 @@ class Component implements ArrayAccess
   public function __set($key, $value)
   {
     $this[$key] = $value;
+  }
+
+  public static function setInstance(Component $instance)
+  {
+    static::$instance = $instance;
+  }
+
+  public static function getInstance()
+  {
+    return static::$instance;
   }
 
 }

@@ -1,6 +1,5 @@
 # Chestnut
 Chestnut PHP framework
-代码重构中，请使用 0.4.0 版本的框架
 ## 安装
 
 通过 [composer](http://www.phpcomposer.com/) 安装
@@ -14,30 +13,17 @@ composer required "leon723/chestnut:~0.5.0"
 
 ```
 <?php
-require_once "../vendor/autoload.php";
+require '../vendor/autoload.php';
 
-/**
- * 创建 Chestnut 实例
- */
-$app = new Chestnut\Application(realpath("../"));
+use Chestnut\Application\Application;
 
-Route::get('/', function() {
-  echo "hello world";
-});
+$app = new Application(
+  realpath('../')
+);
 
-Route::get('/:name', function($name) {
-  echo "hello $name";
-});
+require '../app/route.php';
 
-/**
- * 启动程序
- */
 $app->boot();
-
-/**
- * 运行程序
- */
-$app->terminate();
 ```
 
 ## 美化链接

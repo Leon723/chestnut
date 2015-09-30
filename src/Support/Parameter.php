@@ -65,7 +65,7 @@ class Parameter implements ArrayAccess, IteratorAggregate
    */
   public function set($key, $value)
   {
-    $array = &$this->attributes;
+    $array = & $this->attributes;
 
     $keys = explode(".", $key);
 
@@ -76,12 +76,49 @@ class Parameter implements ArrayAccess, IteratorAggregate
         $array[$key] = [];
       }
 
-      $array = &$array[$key];
+      $array = & $array[$key];
     }
 
     $key = array_shift($keys);
 
     $array[$key] = $value;
+  }
+
+  public function add($key, $value)
+  {
+    if(! $this->has($key)) {
+      $this->set($key, $value);
+      return $this;
+    } else if(is_array($value)) {
+      switch(count($value)) {
+        case 1:
+          $this->set("$key." . key($value), current($value));
+          break;
+        default:
+          foreach($value as $name=> $val) {
+            $this->add($name, $val);
+          }
+          break;
+      }
+      return $this;
+    } else {
+      $array = & $this->reference($key);
+    }
+
+    $isArray = true;
+    if(!is_array($array)) {
+      $isArray = false;
+    }
+
+    if(is_array($value)) {
+      $array = array_merge($isArray ? $array : [$array], $value);
+    } elseif($isArray) {
+      $array[] = $value;
+    } else {
+      $array = [$array, $value];
+    }
+
+    return $this;
   }
 
   /**
@@ -93,19 +130,37 @@ class Parameter implements ArrayAccess, IteratorAggregate
    *
    * @return mixed
    */
-  public function get($key, $default = null, $reference = false)
+  public function & get($key, $default = null, $reference = false)
   {
-    $array = $reference ? &$this->attributes : $this->attributes;
+    if(is_null($key)) {
+      return $default;
+    }
+
+    if($reference) {
+      $array = & $this->attributes;
+    } else {
+      $array = $this->attributes;
+    }
 
     foreach(explode(".", $key) as $segment) {
       if(! array_key_exists($segment, $array)) {
         return $default;
       }
 
-      $array = $reference ? &$array[$segment] : $array[$segment];
+      if($reference) {
+        $array = & $array[$segment];
+      } else {
+        $array = $array[$segment];
+      }
     }
 
     return $array;
+  }
+
+  public function & reference($key)
+  {
+    $result = & $this->get($key, null, true);
+    return $result;
   }
 
   /**
@@ -127,7 +182,8 @@ class Parameter implements ArrayAccess, IteratorAggregate
    */
   public function remove($key)
   {
-    unset($this->get($key, null, true));
+    $result = &$this->reference($key);
+    unset($result);
   }
 
   public function offsetSet($key, $value)
@@ -150,6 +206,13 @@ class Parameter implements ArrayAccess, IteratorAggregate
     $this->remove($key);
   }
 
+  public function __get($key)
+  {
+    $key = join(".", explode('_', $key));
+
+    return $this[$key];
+  }
+
   public function count($key = null)
   {
     return is_null($key) ? count($this->arrtibutes) : count($this->get($key));
@@ -158,5 +221,15 @@ class Parameter implements ArrayAccess, IteratorAggregate
   public function getIterator()
   {
     return new ArrayIterator($this->attributes);
+  }
+
+  public function toJson()
+  {
+    return json_encode($this->attributes);
+  }
+
+  public function __toString()
+  {
+    return $this->toJson();
   }
 }
