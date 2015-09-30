@@ -25,6 +25,8 @@ class Application extends Component
     $this->singleton(['Chestnut\Http\Router'=> 'route']);
     $this->singleton(['Chestnut\Http\Response'=> 'response']);
     $this->register(['Chestnut\Application\Dispatcher'=> 'dispatch']);
+    $this->register(['Chestnut\Nut\Nut' => 'nut']);
+    $this->register(['Chestnut\View\View'=> 'view']);
 
     $this->instance('app', $this);
     $this->instance('Chestnut\Application\Application', $this);

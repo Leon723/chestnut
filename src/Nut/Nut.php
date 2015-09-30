@@ -66,7 +66,7 @@ class Nut implements \Countable, \IteratorAggregate
 
     if(! isset($this->table))
     {
-      $prefix = config('database.mysql.prefix', '');
+      $prefix = config('mysql.prefix', '');
 
       $this->table = $prefix . strtolower(preg_replace("#((?<=[a-z])(?=[A-Z]))#", "_", array_pop($className))) . 's';
     }

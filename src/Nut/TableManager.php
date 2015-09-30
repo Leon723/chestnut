@@ -1,4 +1,4 @@
-<?php namespace Chestnut\Core\Nut;
+<?php namespace Chestnut\Nut;
 
 class TableManager
 {

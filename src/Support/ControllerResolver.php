@@ -35,7 +35,7 @@ class ControllerResolver
     if(is_callable($this->controller)) {
       $reflector = new ReflectionFunction($this->controller);
     } else {
-      $controller = explode("::", $this->controller);
+      $controller = explode("@", $this->controller);
 
       switch(count($controller)) {
         case 2:

@@ -1,6 +1,7 @@
 <?php namespace Chestnut\Http;
 
-use CHestnut\Http\Request;
+use Chestnut\View\View;
+use Chestnut\Http\Request;
 use Chestnut\Support\Parameter;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 

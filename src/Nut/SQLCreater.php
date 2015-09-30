@@ -1,8 +1,8 @@
-<?php namespace Chestnut\Core\Nut;
+<?php namespace Chestnut\Nut;
 
-use Chestnut\Core\Config\Config;
+use Chestnut\Support\Parameter;
 
-class SQLCreater extends Config
+class SQLCreater extends Parameter
 {
 
   /**

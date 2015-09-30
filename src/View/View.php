@@ -1,6 +1,6 @@
-<?php namespace Chestnut\Core\View;
+<?php namespace Chestnut\View;
 
-use Chestnut\Application;
+use Chestnut\Application\Application;
 
 class View
 {
@@ -43,12 +43,12 @@ class View
 
   public function getCachePath()
   {
-    return $this->app['path'] . $this->app['config.view.cache'] . md5($this->fileName);
+    return $this->app['path'] . $this->app['config']->get('view.cache') . md5($this->fileName);
   }
 
   public function getTemplatesPath()
   {
-    $this->app['path'] . $this->app['config.view.templates'] . $this->fileName . ".php";
+    return $this->app['path'] . $this->app['config']->get('view.templates') . $this->fileName . ".php";
   }
 
   public function checkCache()
@@ -96,6 +96,13 @@ class View
     }
 
     return $this;
+  }
+
+  public function __toString()
+  {
+    ob_start();
+    $this->display();
+    return ob_get_clean();
   }
 
 }

@@ -1,4 +1,4 @@
-<?php namespace Chestnut\Core\Nut;
+<?php namespace Chestnut\Nut;
 
 class Database
 {
@@ -29,10 +29,10 @@ class Database
 
     try {
       $this->db = new \PDO(
-                "mysql:host=" . config('database.mysql.host')
-                . ";dbname=" . config('database.mysql.dbname'),
-                config('database.mysql.user'),
-                config('database.mysql.password'),
+                "mysql:host=" . config('mysql.host')
+                . ";dbname=" . config('mysql.dbname'),
+                config('mysql.user'),
+                config('mysql.password'),
                 [\PDO::MYSQL_ATTR_INIT_COMMAND=> "SET NAMES 'utf8';"]
       );
 

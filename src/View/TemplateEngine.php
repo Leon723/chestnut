@@ -1,4 +1,4 @@
-<?php namespace Chestnut\Core\View;
+<?php namespace Chestnut\View;
 
 class TemplateEngine
 {
@@ -11,7 +11,7 @@ class TemplateEngine
   public function __construct($path)
   {
     $this->path = $path;
-    $this->rootDir = app('path') . DIRECTORY_SEPARATOR . "views/";
+    $this->rootDir = app('path') . config('view.templates');
   }
 
   public function make()
