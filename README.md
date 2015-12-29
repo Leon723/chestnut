@@ -6,22 +6,22 @@ Chestnut PHP framework
 
 
 ```
-composer required "leon723/chestnut:~0.5.0"
+composer required "leon723/chestnut:*"
 ```
 
 在项目根目录创建 index.php 并输入以下内容：
 
 ```
 <?php
-require '../vendor/autoload.php';
+require_once "../vendor/autoload.php";
 
-use Chestnut\Application\Application;
-
-$app = new Application(
-  realpath('../')
+$app = new Chestnut\Foundation\Application(
+    realpath("../")
 );
 
-require '../app/route.php';
+Route::group(['namespace' => 'App\Controllers'], function () {
+    require '../app/route.php';
+});
 
 $app->boot();
 ```

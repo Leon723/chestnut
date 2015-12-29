@@ -1,235 +1,228 @@
 <?php namespace Chestnut\Support;
 
 use ArrayAccess;
-use ArrayIterator;
+use Chestnut\Contract\Support\Parameter as ParameterContract;
+use Closure;
 use IteratorAggregate;
 
-class Parameter implements ArrayAccess, IteratorAggregate
-{
-  /**
-   * 属性存储
-   *
-   * @var array
-   */
-  protected $attributes = [];
+class Parameter implements ParameterContract, ArrayAccess, IteratorAggregate {
+	protected $attributes;
 
-  /**
-   * 构造参数对象
-   *
-   * @param array $attributes 初始化参数
-   */
-  public function __construct($attributes = [])
-  {
-    $this->replace($attributes);
-  }
+	public function __construct(array $value = []) {
+		$this->replace($value);
+	}
 
-  /**
-   * 重置属性
-   *
-   * @param array $attributes 重置参数
-   *
-   * @return void
-   */
-  public function replace($attributes)
-  {
-    $this->attributes = (array) $attributes;
-  }
+	public function replace($value) {
+		$this->attributes = (array) $value;
+	}
 
-  /**
-   * 获取所有属性
-   *
-   * @return array
-   */
-  public function all()
-  {
-    return $this->attributes;
-  }
+	public function keys($key = null) {
+		return is_null($key) ? array_keys($this->attributes) : array_keys($this->attributes[$key]);
+	}
 
-  /**
-   * 获取所有属性键名
-   *
-   * @return array
-   */
-  public function keys()
-  {
-    return array_keys($this->attributes);
-  }
+	public function set($key, $value) {
+		$array = &$this->attributes;
+		$keys = explode('.', $key);
 
-  /**
-   * 设置属性
-   *
-   * @param string $key   属性名
-   * @param mixed  $value 属性值
-   *
-   * @return void
-   */
-  public function set($key, $value)
-  {
-    $array = & $this->attributes;
+		foreach ($keys as $key) {
+			if (!isset($array[$key])) {
+				$array[$key] = [];
+			}
 
-    $keys = explode(".", $key);
+			if (!is_array($array[$key])) {
+				$array[$key] = [$array[$key]];
+			}
 
-    while(count($keys) > 1) {
-      $key = array_shift($keys);
+			$array = &$array[$key];
+		}
 
-      if(! isset($array[$key]) || ! is_array($array[$key])) {
-        $array[$key] = [];
-      }
+		$array = $value;
+	}
 
-      $array = & $array[$key];
-    }
+	public function push($key, $value) {
+		if (!$this->has($key)) {
+			$this->set($key, $value);
+			return $this;
+		} else if (is_array($value)) {
+			switch (count($value)) {
+			case 1:
+				$this->set("$key." . key($value), current($value));
+				break;
+			default:
+				foreach ($value as $name => $val) {
+					$this->add($name, $val);
+				}
+				break;
+			}
+			return $this;
+		} else {
+			$array = &$this->reference($key);
+		}
 
-    $key = array_shift($keys);
+		$isArray = true;
+		if (!is_array($array)) {
+			$isArray = false;
+		}
 
-    $array[$key] = $value;
-  }
+		if (is_array($value)) {
+			$array = array_merge($isArray ? $array : [$array], $value);
+		} elseif ($isArray) {
+			$array[] = $value;
+		} else {
+			$array = [$array, $value];
+		}
 
-  public function add($key, $value)
-  {
-    if(! $this->has($key)) {
-      $this->set($key, $value);
-      return $this;
-    } else if(is_array($value)) {
-      switch(count($value)) {
-        case 1:
-          $this->set("$key." . key($value), current($value));
-          break;
-        default:
-          foreach($value as $name=> $val) {
-            $this->add($name, $val);
-          }
-          break;
-      }
-      return $this;
-    } else {
-      $array = & $this->reference($key);
-    }
+		return $this;
+	}
 
-    $isArray = true;
-    if(!is_array($array)) {
-      $isArray = false;
-    }
+	public function add($key, $value) {
+		return $this->push($key, $value);
+	}
 
-    if(is_array($value)) {
-      $array = array_merge($isArray ? $array : [$array], $value);
-    } elseif($isArray) {
-      $array[] = $value;
-    } else {
-      $array = [$array, $value];
-    }
+	/**
+	 * 获取属性值
+	 *
+	 * @param string  $key        属性名
+	 * @param mixed   $default    默认返回值
+	 * @param bool    $reference  是否引用属性
+	 *
+	 * @return mixed
+	 */
+	public function &get($key, $default = null, $reference = false) {
+		if (is_null($key)) {
+			return $default;
+		}
 
-    return $this;
-  }
+		if ($reference) {
+			$array = &$this->attributes;
+		} else {
+			$array = $this->attributes;
+		}
 
-  /**
-   * 获取属性值
-   *
-   * @param string  $key        属性名
-   * @param mixed   $default    默认返回值
-   * @param bool    $reference  是否引用属性
-   *
-   * @return mixed
-   */
-  public function & get($key, $default = null, $reference = false)
-  {
-    if(is_null($key)) {
-      return $default;
-    }
+		foreach (explode(".", $key) as $segment) {
+			if (!array_key_exists($segment, $array)) {
+				return $default;
+			}
 
-    if($reference) {
-      $array = & $this->attributes;
-    } else {
-      $array = $this->attributes;
-    }
+			if ($reference) {
+				$array = &$array[$segment];
+			} else {
+				$array = $array[$segment];
+			}
+		}
 
-    foreach(explode(".", $key) as $segment) {
-      if(! array_key_exists($segment, $array)) {
-        return $default;
-      }
+		return $array;
+	}
 
-      if($reference) {
-        $array = & $array[$segment];
-      } else {
-        $array = $array[$segment];
-      }
-    }
+	public function filter($filters, $callback = null) {
+		if (!$callback instanceof Closure) {
+			$callback = function ($var) use ($filters) {
+				return !in_array($var, $filters);
+			};
+		}
 
-    return $array;
-  }
+		return new static(array_filter($this->attributes, $callback, ARRAY_FILTER_USE_KEY));
+	}
 
-  public function & reference($key)
-  {
-    $result = & $this->get($key, null, true);
-    return $result;
-  }
+	public function merge($array) {
+		foreach ($array as $key => $value) {
+			if (!$this->has($key)) {
+				$this->set($key, $value);
+			}
+		}
 
-  /**
-   * 查明是否包含属性
-   *
-   * @param string $key 属性名
-   *
-   * @return bool
-   */
-  public function has($key)
-  {
-    return ! is_null($this->get($key));
-  }
+		return $this;
+	}
 
-  /**
-   * 移除属性
-   *
-   * @param string $key 属性名
-   */
-  public function remove($key)
-  {
-    $result = &$this->reference($key);
-    unset($result);
-  }
+	public function &reference($key) {
+		$result = &$this->get($key, null, true);
+		return $result;
+	}
 
-  public function offsetSet($key, $value)
-  {
-    $this->set($key, $value);
-  }
+	public function join($symbol, $key = null) {
+		if (is_null($key)) {
+			$result = join($this->attributes, $symbol);
+		} else {
+			$result = $this->get($key);
+			$result = is_array($result) ? join($result, $symbol) : $result;
+		}
+		return $result;
+	}
 
-  public function offsetGet($key)
-  {
-    return $this->get($key);
-  }
+	public function joinKeys($symbol) {
+		return join(array_keys($this->attributes), $symbol);
+	}
 
-  public function offsetExists($key)
-  {
-    return $this->has($key);
-  }
+	/**
+	 * 查明是否包含属性
+	 *
+	 * @param string $key 属性名
+	 *
+	 * @return bool
+	 */
+	public function has($key) {
+		return !is_null($this->get($key));
+	}
 
-  public function offsetUnset($key)
-  {
-    $this->remove($key);
-  }
+	public function count($key = null) {
+		return is_null($key) ? count($this->attributes) : count($this->get($key));
+	}
 
-  public function __get($key)
-  {
-    $key = join(".", explode('_', $key));
+	public function length($key = null) {
+		return $this->count($key);
+	}
 
-    return $this[$key];
-  }
+	/**
+	 * 移除属性
+	 *
+	 * @param string $key 属性名
+	 */
+	public function remove($key) {
+		$array = &$this->attributes;
+		$keys = explode('.', $key);
 
-  public function count($key = null)
-  {
-    return is_null($key) ? count($this->arrtibutes) : count($this->get($key));
-  }
+		while (count($keys) > 1) {
+			$key = array_shift($keys);
 
-  public function getIterator()
-  {
-    return new ArrayIterator($this->attributes);
-  }
+			if (!isset($array[$key])) {
+				return false;
+			}
 
-  public function toJson()
-  {
-    return json_encode($this->attributes);
-  }
+			$array = &$array[$key];
+		}
 
-  public function __toString()
-  {
-    return $this->toJson();
-  }
+		unset($array[array_shift($keys)]);
+	}
+
+	public function offsetSet($key, $value) {
+		$this->set($key, $value);
+	}
+
+	public function offsetGet($key) {
+		return $this->get($key);
+	}
+
+	public function offsetExists($key) {
+		return $this->has($key);
+	}
+
+	public function offsetUnset($key) {
+		$this->remove($key);
+	}
+
+	public function getIterator() {
+		return new \ArrayIterator($this->attributes);
+	}
+
+	public function toArray() {
+		return $this->attributes;
+	}
+
+	public function toJson() {
+		return json_encode($this->attributes);
+	}
+
+	public function __toString() {
+		return $this->toJson();
+	}
 }

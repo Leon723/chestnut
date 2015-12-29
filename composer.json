@@ -9,7 +9,7 @@
             "role": "DEVELOPER"
         }
     ],
-    "version":"0.5.1",
+    "version":"0.6.0",
     "minimum-stability": "dev",
     "require": {
         "php": ">=5.4.0",
@@ -18,9 +18,6 @@
     "autoload": {
         "psr-4": {
             "Chestnut\\": "src/"
-        },
-        "files": [
-          "src/Support/Helper.php"
-        ]
+        }
     }
 }
