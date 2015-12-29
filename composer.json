@@ -18,6 +18,9 @@
     "autoload": {
         "psr-4": {
             "Chestnut\\": "src/"
-        }
+        },
+        "files": [
+          "src/Helper/Helper.php"
+        ]
     }
 }
