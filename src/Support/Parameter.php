@@ -39,7 +39,11 @@ class Parameter implements ParameterContract, ArrayAccess, IteratorAggregate {
 		$array = $value;
 	}
 
-	public function push($key, $value) {
+	public function push($key, $value = null) {
+		if (is_null($value)) {
+			return array_push($this->attributes, $key);
+		}
+
 		if (!$this->has($key)) {
 			$this->set($key, $value);
 			return $this;
@@ -75,7 +79,7 @@ class Parameter implements ParameterContract, ArrayAccess, IteratorAggregate {
 		return $this;
 	}
 
-	public function add($key, $value) {
+	public function add($key, $value = null) {
 		return $this->push($key, $value);
 	}
 

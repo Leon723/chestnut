@@ -19,7 +19,13 @@ class RouteCollector implements IteratorAggregate {
 
 		$route = new Route($method, $pattern, $options);
 
-		$this->routes[] = $route;
+		if (is_array($method)) {
+			foreach ($method as $m) {
+				$this->routes[$route->getIdentifier()][strtoupper($m)] = $route;
+			}
+		} else {
+			$this->routes[$route->getIdentifier()][strtoupper($method)] = $route;
+		}
 
 		return $route;
 	}
@@ -66,13 +72,15 @@ class RouteCollector implements IteratorAggregate {
 	public function processGroup($options) {
 		$group = end($this->groupStack);
 
-		if (array_key_exists('namespace', $group) && array_key_exists('namespace', $options)) {
-			$options['namespace'] = $group['namespace'] . '\\' . $options['namespace'];
-		} elseif (array_key_exists('namespace', $group) && !$options['controller'] instanceof Closure) {
-			$options['controller'] = $group['namespace'] . '\\' . $options['controller'];
-		}
+		return array_merge_recursive($group, $options);
+	}
 
-		return array_merge($group, $options);
+	public function hasRoute($route) {
+		return isset($this->routes[$route]);
+	}
+
+	public function getRoute($route) {
+		return $this->routes[$route];
 	}
 
 	public function getIterator() {

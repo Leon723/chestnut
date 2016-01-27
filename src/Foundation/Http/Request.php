@@ -14,4 +14,11 @@ class Request extends SymfonyRequest {
 	public function files() {
 		return $this->files;
 	}
+
+	public function all() {
+		$request = $this->request->all();
+		$query = $this->query->all();
+
+		return array_merge($request, $query);
+	}
 }

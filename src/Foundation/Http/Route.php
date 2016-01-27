@@ -5,6 +5,7 @@ use Chestnut\Foundation\Http\Request;
 use Chestnut\Support\Container as Container;
 use Chestnut\Support\ControllerBuilder;
 use Chestnut\Support\Parameter;
+use Closure;
 
 class Route implements ArrayAccess {
 	/**
@@ -24,7 +25,41 @@ class Route implements ArrayAccess {
 		$this->attributes = new Parameter($options);
 		$this->method($method);
 
-		$this['pattern'] = $pattern;
+		$this->setPattern($pattern);
+		$this->setIdentifier($pattern);
+	}
+
+	public function setPattern($pattern) {
+		$pattern = is_array($this['prefix']) ? join($this['prefix'], '') . $pattern : $this['prefix'] . $pattern;
+
+		$this['pattern'] = preg_replace_callback('/{(\w*?)(\[\S*?\])?}/', function ($matches) {
+			return $this->parseUrl($matches);
+		}, $pattern);
+	}
+
+	public function setIdentifier($pattern) {
+
+		$pattern = is_array($this['prefix']) ? join($this['prefix'], '') . $pattern : $this['prefix'] . $pattern;
+
+		$identifier = preg_replace_callback('/{(\w*?)(\[\S*?\])?}/', function ($matches) {
+			return "%s";
+		}, $pattern);
+
+		$this['identifier_match'] = $identifier;
+
+		$identifier = explode('/', ltrim($identifier, '/'));
+		$end = count($identifier) - 1;
+
+		if ($identifier[$end] === '') {
+			$identifier[$end] = 'index';
+		}
+
+		$parent = count($identifier) > 2 ? [$identifier[0], $identifier[1]] : $identifier;
+
+		$this['parent'] = join($parent, ".");
+		$identifier = join($identifier, '.');
+
+		$this['identifier'] = $identifier;
 	}
 
 	/**
@@ -47,10 +82,6 @@ class Route implements ArrayAccess {
 			return false;
 		}
 
-		if (!$this->parseUrl($uri)) {
-			return false;
-		}
-
 		$this->registerMiddleware();
 
 		return true;
@@ -59,6 +90,11 @@ class Route implements ArrayAccess {
 	public function dispatch(Container $app) {
 		$controller = $this['controller'];
 
+		if (isset($this['namespace']) && is_array($this['namespace']) && !$controller instanceof Closure) {
+			$controller = rtrim(join($this['namespace'], '\\'), "\\") . "\\" . $controller;
+		} elseif (isset($this['namespace']) && !$controller instanceof Closure) {
+			$controller = $this['namespace'] . '\\' . $controller;
+		}
 		$builder = new ControllerBuilder($controller);
 
 		$builder->inject($app, $this['parameters']);
@@ -80,7 +116,7 @@ class Route implements ArrayAccess {
 			return $this;
 		}
 
-		$this->attributes->add("condition", [$key, $condition]);
+		$this->attributes->add("condition", [$key => $condition]);
 		return $this;
 	}
 
@@ -114,6 +150,60 @@ class Route implements ArrayAccess {
 		return $this->attributes->has("method." . strtoupper($method)) && $this["method." . strtoupper($method)];
 	}
 
+	public function matchUrl($url) {
+		if ($url === $this['pattern']) {
+			return true;
+		}
+
+		if (preg_match("#^{$this['pattern']}$#", $url, $matches)) {
+			foreach ($this->getParameters() as $key => $param) {
+				if ($this->hasCondition($key) && !preg_match($this->getCondition($key), $matches[$key])) {
+					return false;
+				}
+
+				$this->setParameter($key, $matches[$key]);
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
+	public function getParameters() {
+		return $this['parameters'];
+	}
+
+	public function getIdentifier() {
+		return join(explode('.%s', $this['identifier']), '');
+	}
+
+	public function getParent() {
+		return $this['parent'];
+	}
+
+	public function identifierMatch() {
+		$args = func_get_arg(0);
+
+		array_unshift($args, $this['identifier_match']);
+
+		$match = call_user_func_array('sprintf', $args);
+
+		if ($this->matchUrl($match)) {
+			return $match;
+		}
+
+		return false;
+	}
+
+	public function getCondition($key) {
+		return $this['condition.' . $key];
+	}
+
+	public function hasCondition($key) {
+		return isset($this['condition.' . $key]);
+	}
+
 	public function offsetSet($key, $value) {
 		$this->attributes[$key] = $value;
 	}
@@ -141,92 +231,36 @@ class Route implements ArrayAccess {
 
 		return true;
 	}
-	/**
-	 * 匹配路径
-	 *
-	 * @param Chestnut\Http\Request $request 请求实例
-	 *
-	 * @return bool
-	 */
-	private function matchUrl($uri) {
-		if (!$url = strstr($this['pattern'], ':', true)) {
-			$url = $this['pattern'];
-		}
-
-		$url = strlen($url) > 1 ? rtrim($url, '/') : $url;
-
-		if ($url !== $uri && $url !== substr($uri, 0, strpos($this['pattern'], "/:"))) {
-			return false;
-		}
-
-		return true;
-	}
 
 	/**
-	 * 解析 URL 获取参数
+	 * 解析 URL
 	 *
 	 * @param string $url
 	 *
 	 * @return bool
 	 */
-	private function parseUrl($url) {
-		$params = $this->getParams($this['pattern']);
+	private function parseUrl($matches) {
+		$name = $matches[1];
+		$this->setParameter($name);
 
-		$urlParamString = substr($url, strpos($this['pattern'], "/:"));
-		$urlParams = $this->getParams($urlParamString, true);
-
-		if (count($params) >= 1 && count($params) !== count($urlParams)) {
-			return false;
+		if (isset($matches[2])) {
+			$this->condition($name, "#" . $matches[2] . "+#");
 		}
 
-		$result = [];
-
-		foreach ($params as $index => $key) {
-			if (array_key_exists($key, $result)) {
-				throw new \RuntimeException("The parameter [$key] has already exists, please check your route url");
-			}
-
-			$key = explode('@', $key);
-
-			if ($this->attributes->has('condition.' . $key[0])) {
-				$key[1] = $this["condition." . $key[0]];
-			}
-
-			if (count($key) > 1 && preg_match("/$key[1]+/", $urlParams[$index])) {
-				$result[$key[0]] = $urlParams[$index];
-			} else if (count($key) === 1) {
-				$result[$key[0]] = $urlParams[$index];
-			} else {
-				return false;
-			}
-		}
-
-		$this['parameters'] = $result;
-
-		return true;
+		return "(?P<$name>\w+)";
 	}
 
-	/**
-	 * 获取路径上的参数
-	 *
-	 * @param string  $url        路径
-	 * @param bool    $isRequest  是否为请求路径
-	 *
-	 * @return array
-	 */
-	private function getParams($url, $isRequest = false) {
-		$segment = $isRequest ? "/" : "/:";
-
-		$params = explode($segment, $url);
-
-		array_shift($params);
-
-		return $params;
+	private function setParameter($name, $value = null) {
+		$this->attributes->set("parameters.$name", $value);
 	}
 
 	public function registerMiddleware() {
 		if (isset($this['middleware'])) {
 			foreach ($this['middleware'] as $middleware) {
+				if (empty($middleware)) {
+					continue;
+				}
+
 				$middleware = 'App\\Middlewares\\' . $middleware;
 				(new $middleware)->register();
 			}

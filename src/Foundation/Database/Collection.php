@@ -5,6 +5,8 @@ use Chestnut\Support\Parameter;
 
 class Collection extends Parameter {
 	public function compare($array) {
+		$compare = [];
+
 		if (!$array instanceof static ) {
 			$array = (array) $array;
 		}
@@ -14,9 +16,13 @@ class Collection extends Parameter {
 				continue;
 			}
 
-			return false;
+			$compare[$key] = $this[$key];
 		}
 
-		return true;
+		return count($compare) ? new static($compare) : [];
+	}
+
+	public function getHiddenIterator($hidden) {
+		return $this->filter($hidden)->getIterator();
 	}
 }

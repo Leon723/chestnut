@@ -18,13 +18,27 @@ class Session extends SymfonySession {
 	public function start() {
 		if ($session_id = cookie('chestnut_session')) {
 			$this->setId($session_id);
-			return parent::start();
+			parent::start();
+		} else {
+			parent::start();
+			$session_id = $this->getId();
+
+			cookie('chestnut_session', $session_id, 0);
 		}
 
-		parent::start();
+		if (request()->server->has('HTTP_REFERER') && request()->method() !== 'POST' && !session()->has('referer.' . request()->path())) {
+			session('referer.' . request()->path(), request()->server->get('HTTP_REFERER'));
+		}
+
+	}
+
+	public function migrate($destroy = false, $lifetime = 86400) {
+		parent::migrate($destroy, null);
+
 		$session_id = $this->getId();
 
-		cookie('chestnut_session', $session_id, 86400, true);
+		cookie_remove('chestnut_session');
+		cookie('chestnut_session', $session_id, $lifetime);
 	}
 
 	public static function __callStatic($method, $params) {

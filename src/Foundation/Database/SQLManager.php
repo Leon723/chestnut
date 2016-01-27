@@ -36,7 +36,7 @@ class SQLManager extends Parameter {
 		$query = "SELECT ";
 
 		foreach ($this->get('select', ['*']) as $select) {
-			if ($select === '*') {
+			if (in_array($select, ['*', 'count(*) as count', 'count(*)'])) {
 				$query .= "$select,";
 			} else {
 				$query .= $this->getTableAlias() . ".`$select`,";

@@ -11,6 +11,11 @@ class Schema extends Parameter {
 		$this->charset("UTF8");
 	}
 
+	/**
+	 * Setting Increment Key
+	 * @param  string $name Key Name
+	 * @return null
+	 */
 	public function increment($name) {
 		$this->set($name, [
 			"type" => "INT",
@@ -21,6 +26,11 @@ class Schema extends Parameter {
 		$this->primary("id");
 	}
 
+	/**
+	 * Setting Primary Key
+	 * @param  string $name Key Name
+	 * @return null
+	 */
 	public function primary($name) {
 		if ($this->has('primary')) {
 			throw new \Exception('The primary key has been set to {' . $this->get('primary') . '}');
@@ -28,6 +38,11 @@ class Schema extends Parameter {
 		$this->set('primary', $name);
 	}
 
+	/**
+	 * Setting Unique Keys
+	 * @param  string|array $name Keys name
+	 * @return null
+	 */
 	public function unique($name) {
 		if (is_string($name)) {
 			$name = func_get_args();
@@ -36,18 +51,40 @@ class Schema extends Parameter {
 		$this->set('unique', $name);
 	}
 
+	/**
+	 * Setting Table Engine
+	 * @param  string $engine Engine type
+	 * @return null
+	 */
 	public function engine($engine) {
 		$this->set('engine', $engine);
 	}
 
+	/**
+	 * Setting Table Charset
+	 * @param  string $charset Char Type
+	 * @return null
+	 */
 	public function charset($charset) {
 		$this->set('charset', $charset);
 	}
 
+	/**
+	 * Setting Increment Start Index
+	 * @param  integer $index Index
+	 * @return null
+	 */
 	public function incrementIndex($index) {
 		$this->set('increment', $index);
 	}
 
+	/**
+	 * Add Varchar Column
+	 * @param  string  $name     Column Name
+	 * @param  integer $length   Column Length
+	 * @param  boolean $nullable Nullable
+	 * @return null
+	 */
 	public function string($name, $length = 255, $nullable = false) {
 		if (is_bool($length)) {
 			$nullable = $length;
@@ -60,6 +97,13 @@ class Schema extends Parameter {
 		]);
 	}
 
+	/**
+	 * Add Integer Column
+	 * @param  string  $name     Column name
+	 * @param  integer $length   Column Length
+	 * @param  boolean $nullable Nullable
+	 * @return null
+	 */
 	public function integer($name, $length = 11, $nullable = false) {
 		if (is_bool($length)) {
 			$nullable = $length;
@@ -72,6 +116,13 @@ class Schema extends Parameter {
 		]);
 	}
 
+	/**
+	 * Add Tinyinteger Column
+	 * @param  string  $name     Column Name
+	 * @param  integer $length   Column Length
+	 * @param  boolean $nullable Nullable
+	 * @return null
+	 */
 	public function tinyinteger($name, $length = 4, $nullable = false) {
 		if (is_bool($length)) {
 			$nullable = $length;
@@ -84,6 +135,12 @@ class Schema extends Parameter {
 		]);
 	}
 
+	/**
+	 * Add Text Column
+	 * @param  string  $name     Column Name
+	 * @param  boolean $nullable Nullable
+	 * @return null
+	 */
 	public function text($name, $nullable = true) {
 		$this->set($name, [
 			"type" => "TEXT",
@@ -91,26 +148,37 @@ class Schema extends Parameter {
 		]);
 	}
 
-	public function timeStamp() {
-		$this->set("created_at", [
+	/**
+	 * Add Timestamp Columns
+	 * @param  string $create Create Column Name
+	 * @param  string $update Update Column Name
+	 * @return null
+	 */
+	public function timeStamp($create = 'created_at', $update = 'updated_at') {
+		$this->set($create, [
 			"type" => "TIMESTAMP",
 		]);
 
-		$this->set("updated_at", [
+		$this->set($update, [
 			"type" => "TIMESTAMP",
 		]);
 	}
 
-	public function softDelete() {
-		$this->set("deleted_at", [
+	/**
+	 * Add Soft Delete Column
+	 * @param  string $softDelete Soft Delete Column Name
+	 * @return null
+	 */
+	public function softDelete($softDelete = 'deleted_at') {
+		$this->set($softDelete, [
 			"type" => "TIMESTAMP",
 		]);
 	}
 
-	public function propertyToString($key) {
-		return join($this->{$key}, " ");
-	}
-
+	/**
+	 * Build Create Table SQL
+	 * @return string Create Table SQL
+	 */
 	public function create() {
 		$result = "CREATE TABLE " . $this->table
 			. "(";

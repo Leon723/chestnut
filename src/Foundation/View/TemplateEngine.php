@@ -1,8 +1,6 @@
 <?php namespace Chestnut\Foundation\View;
 
 class TemplateEngine {
-	protected $layout;
-	protected $view;
 	protected $path;
 	protected $rootDir;
 	protected $section;
@@ -13,23 +11,28 @@ class TemplateEngine {
 	}
 
 	public function make() {
-		$this->_getView();
-		$this->_getLayout();
-
-		return $this->_parse();
+		return $this->parse();
 	}
 
-	private function _getView() {
-		$this->view = file_get_contents($this->path);
+	private function getView() {
+		$view = file_get_contents($this->path);
 
-		preg_match_all("#<@section:(.*)>([\w\W]*?)<@\/section>#", $this->view, $m);
-
-		foreach ($m[1] as $key => $section) {
-			$this->_setSection($section, $m[2][$key]);
+		if (preg_match_all("#{@ *section\((.*?)\) *}([\w\W]*?){@ *endsection *}#", $view, $m)) {
+			foreach ($m[1] as $key => $section) {
+				$this->setSection($section, $m[2][$key]);
+			}
+		} else {
+			$this->setSection(0, $view);
 		}
+
+		return $this->getLayout($view);
 	}
 
-	private function _setSection($section, $value) {
+	private function getParameter($key) {
+		return $this->parameters[$key];
+	}
+
+	private function setSection($section, $value) {
 		if ($this->section === null) {
 			$this->section = [];
 		}
@@ -37,37 +40,38 @@ class TemplateEngine {
 		$this->section[$section] = $value;
 	}
 
-	private function _getSection($section) {
-		return $this->section[$section];
+	private function getSection($section) {
+		return isset($this->section[$section]) ? $this->section[$section] : '';
 	}
 
-	private function _getLayout() {
-		preg_match("#<@layout:([\w\.]+)>#", $this->view, $m);
+	private function getLayout($view) {
+		preg_match("#{@ *layout\((.*?)\) *}#", $view, $m);
 
 		$layoutPath = count($m) ? join("/", explode(".", $m[1])) . ".php" : false;
 
 		if ($layoutPath && file_exists($this->rootDir . $layoutPath)) {
-			$layout = file_get_contents($this->rootDir . $layoutPath);
-
-			$this->layout = $layout;
+			return file_get_contents($this->rootDir . $layoutPath);
 		}
+
+		return false;
 	}
 
-	private function _parse() {
+	private function parse() {
 		$regs = [
-			"_parseNote" => '#<!-- *.* *-->#',
-			"_parseFor" => '#<@for:(\S*)\s*in\s*(\S*)>#',
-			"_parseIf" => '#<@(if(?=\:)|elseif(?=\:)|else)(?:\:?(.*))>#',
-			"_parseVar" => '#<@(\S*?(?=\:))(?:\:(.*?|\[.*\]))>#',
-			"_parseEnd" => '#<@/\S*>#',
+			"parseNote" => '#{{-- *.* *--}}#',
+			"parseFor" => '#{@for:(\S*)\s*in\s*(\S*)}#',
+			"parseIf" => '#{@(if(?=\:)|elseif(?=\:)|else)(?:\:?(.*))}#',
+			"parseInclude" => '#{@ *include\((.*?)\) *}#',
+			"parseVar" => '#{{ *([\S\s]*?)(?:(?: *\|([\s\S]*?))?|(?: *(or|\?\:) *(\w+))?)? *}}#',
+			"parseEnd" => '#{@ *end(?:\S*) *}#',
 		];
 
-		if ($this->layout) {
-			$content = preg_replace_callback("#<@section:(.*)>#", function ($m) {
-				return $this->_getSection($m[1]);
-			}, $this->layout);
+		if ($layout = $this->getView()) {
+			$content = preg_replace_callback("#{@ *section\((.*?)\) *}#", function ($m) {
+				return $this->getSection($m[1]);
+			}, $layout);
 		} else {
-			$content = $this->view;
+			$content = $this->getSection(0);
 		}
 
 		foreach ($regs as $type => $reg) {
@@ -79,33 +83,75 @@ class TemplateEngine {
 		return $content;
 	}
 
-	private function _parseNote($m) {
+	private function parseNote($m) {
 		return "";
 	}
 
-	private function _parseVar($m) {
-		if (preg_match("#\[\S*\]#", $m[2])) {
-			return "<?php echo \$$m[1]$m[2]; ?>";
-		} elseif ($m[1] === "") {
-			if (preg_match("#(\"|\')\S*(\"|\')#", $m[2])) {
-				$m[2] = "$m[2]";
-			} elseif (!(int) $m[2] && "" . (int) $m[2] !== $m[2]) {
-				$m[2] = "\$$m[2]";
-			}
-			return "<?php echo $m[2]; ?>";
+	private function parseVar($m) {
+		if (preg_match('/(\S*?)(?:\(([\S\s]*)\))$/', $m[1], $matches)) {
+			$echo = count($matches) > 2 ? "{$matches[1]}({$matches[2]})" : "$matches[0]";
+		} elseif (preg_match('/([\S\s]+)\?([\S\s]+)\:([\S\s]+)/', $m[1])) {
+			$echo = $m[1];
+		} elseif (preg_match('/(\S*?)([.:]{1}?)(\S*)/', $m[1], $matches)) {
+			$operator = $matches[2] == '.' ? ['->', ''] : ['[\'', '\']'];
+			$echo = "\${$matches[1]}{$operator[0]}{$matches[3]}{$operator[1]}";
 		} else {
-			return "<?php echo \$$m[1]->$m[2]; ?>";
+			$echo = "\${$m[1]}";
+		}
+
+		if (count($m) == 3 && !empty($m[2])) {
+			$filters = explode(' ', trim($m[2]));
+
+			$echo = $this->processFilter($filters, $echo);
+		}
+
+		if (count($m) > 3) {
+			$echo = $this->processOperation($echo, array_slice($m, 3));
+		}
+
+		return "<?php echo $echo; ?>";
+	}
+
+	private function processFilter($filters, $object) {
+		$filter = new Filter($filters);
+
+		return $filter->parse($object);
+	}
+
+	private function processOperation($object, $operation) {
+		switch ($operation[0]) {
+		case 'or':
+		case '?:':
+			return "isset({$object}) ? {$object} : {$operation[1]}";
+		default:
+			return "{$object} {$operation[0]} {$operation[1]}";
 		}
 	}
 
-	private function _parseFor($m) {
+	private function parseFor($m) {
 		$item = explode(",", $m[1]);
 		$parent = $m[2];
 
 		return "<?php foreach(\$$parent as \$" . join("=> $", $item) . ") { ?>";
 	}
 
-	private function _parseIf($m) {
+	private function parseInclude($m) {
+		if (preg_match_all('/[$\w.]+/', $m[1], $matches)) {
+			$path = 'views' . DIRECTORY_SEPARATOR . join(explode('.', $matches[0][0]), DIRECTORY_SEPARATOR) . '.php';
+			if (isset($matches[0][1])) {
+				$data = $matches[0][1];
+			} else {
+				$data = '[]';
+			}
+
+			if (file_exists(app_path($path))) {
+				return "<?php echo view('{$matches[0][0]}', {$data}); ?>";
+			}
+		}
+
+	}
+
+	private function parseIf($m) {
 		switch ($m[1]) {
 		case "if":
 			return "<?php $m[1]($m[2]) { ?>";
@@ -119,7 +165,7 @@ class TemplateEngine {
 		}
 	}
 
-	private function _parseEnd($m) {
+	private function parseEnd($m) {
 		return "<?php } ?>";
 	}
 

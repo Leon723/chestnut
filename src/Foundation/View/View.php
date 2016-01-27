@@ -4,8 +4,10 @@ use Chestnut\Support\Cache;
 use Chestnut\Support\File;
 
 class View {
-	protected $properties;
 	protected $fileName;
+	protected $properties = [];
+
+	protected static $globalData = [];
 
 	public function __construct() {
 	}
@@ -17,7 +19,7 @@ class View {
 		return $this;
 	}
 
-	public function data(array $data) {
+	public function data($data) {
 		if (is_null($this->properties)) {
 			$this->properties = $data;
 		} else {
@@ -27,6 +29,10 @@ class View {
 		}
 
 		return $this;
+	}
+
+	public function getData() {
+		return $this->properties;
 	}
 
 	public function make($filename, $data = []) {
@@ -67,13 +73,39 @@ class View {
 	}
 
 	public function display() {
-		extract($this->properties);
+		$obLevel = ob_get_level();
+
+		ob_start();
+
+		$properties = array_merge(static::$globalData, $this->properties);
+
+		extract($properties);
 
 		if (!$this->checkCache()) {
 			$this->template();
 		}
 
-		require $this->getCachePath();
+		try {
+			require $this->getCachePath();
+		} catch (\Exception $e) {
+			while (ob_get_level() > $obLevel) {
+				ob_end_clean();
+			}
+
+			throw $e;
+		}
+
+		return ltrim(ob_get_clean());
+	}
+
+	public static function addGlobal($key, $value = null) {
+		if (is_array($key)) {
+			foreach ($key as $name => $item) {
+				static::addGlobal($name, $item);
+			}
+		}
+
+		static::$globalData[$key] = $value;
 	}
 
 	public function __call($key, $params) {
@@ -87,13 +119,7 @@ class View {
 	}
 
 	public function __toString() {
-		try {
-			ob_start();
-			$this->display();
-			return ob_get_clean();
-		} catch (\RuntimeException $e) {
-			throw $e;
-		}
+		return $this->display();
 	}
 
 }

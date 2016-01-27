@@ -23,23 +23,33 @@ if (!function_exists('config')) {
 }
 
 if (!function_exists('request')) {
-	function request($key = null) {
+	function request($key = null, $default = null) {
 		if (is_null($key)) {
 			return app('request');
 		}
 
-		return app('request')->get($key);
+		return app('request')->get($key, $default);
+	}
+}
+
+if (!function_exists('url')) {
+	function url() {
+		return call_user_func_array([app('route'), 'url'], func_get_args());
 	}
 }
 
 if (!function_exists('view')) {
 	function view($filename, $data = []) {
+		if (is_null($filename)) {
+			return app('view');
+		}
+
 		return app('view')->make($filename, $data);
 	}
 }
 
 if (!function_exists('cookie')) {
-	function cookie($name, $value = null, $expire = 0, $path = null, $secure = false, $httpOnly = true) {
+	function cookie($name, $value = null, $expire = 0, $path = '/', $secure = false, $httpOnly = true) {
 		if (is_null($value) && $cookie = app('request')->cookies->get($name)) {
 			return decrypt($cookie);
 		}
@@ -47,7 +57,7 @@ if (!function_exists('cookie')) {
 		if (!app('request')->cookies->has($name)) {
 			$value = encrypt($value);
 
-			if (is_numeric($expire)) {
+			if (is_numeric($expire) && $expire > 0) {
 				$expire = time() + $expire;
 			}
 
@@ -75,12 +85,30 @@ if (!function_exists('cookie_remove')) {
 }
 
 if (!function_exists('session')) {
-	function session($name, $value = null) {
+	function session($name = null, $value = null) {
+		if (is_null($name)) {
+			return app('session');
+		}
+
 		if (is_null($value)) {
 			return app('session')->get($name);
 		}
 
 		app('session')->set($name, $value);
+	}
+}
+
+if (!function_exists('session_flash')) {
+	function session_flash($name = null, $value = null) {
+		if (is_null($name)) {
+			return app('session')->getFlashBag();
+		}
+
+		if (is_null($value)) {
+			return app('session')->getFlashBag()->get($name, []);
+		}
+
+		app('session')->getFlashBag()->add($name, $value);
 	}
 }
 
@@ -123,6 +151,29 @@ if (!function_exists('redirect')) {
 	}
 }
 
+if (!function_exists('back')) {
+	function back($go = false) {
+		if (!$go) {
+			$back = session('referer.' . request()->path());
+			return $back;
+		}
+
+		return redirect(back());
+	}
+}
+
+if (!function_exists('app_path')) {
+	function app_path($path) {
+		return app()->path($path);
+	}
+}
+
+if (!function_exists('public_path')) {
+	function public_path($path) {
+		return app()->publicPath($path);
+	}
+}
+
 if (!function_exists('cache_path')) {
 	function cache_path($path) {
 		return app()->cachePath($path);
@@ -150,6 +201,14 @@ if (!function_exists('end_with')) {
 		return substr($string, -1, strlen($end)) === $end;
 	}
 }
+
+// if(!function_exists('csrf_field')) {
+// 	function csrf_field() {
+// 		$string =
+// 		$token = encrypt()
+// 		return '<input type="hidden" name="csrf_token" value="' .  . '">';
+// 	}
+// }
 
 if (!function_exists('toUnderline')) {
 	function toUnderline($string) {

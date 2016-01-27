@@ -3,6 +3,7 @@
 use Chestnut\Contract\Support\Container as ContainerContract;
 use Chestnut\Foundation\Http\Request;
 use Chestnut\Foundation\Http\Response;
+use Chestnut\Foundation\View\View;
 use Chestnut\Support\Container;
 use Chestnut\Support\File;
 use Chestnut\Support\Parameter;
@@ -19,21 +20,27 @@ class Application extends Container implements ContainerContract {
 		$this->initConfig($basePath);
 		$this->registerAlias();
 
+		$this->session->start();
+
+		$logger = new \Monolog\Logger('Chestnut');
+
+		$logger->pushHandler(new \Monolog\Handler\StreamHandler($this->cachePath('log.log'), \Monolog\Logger::ERROR));
+
 		$this->registerMiddleware($this);
 	}
 
 	public function registerBaseComponent() {
 
 		$this->singleton(['Chestnut\Foundation\Http\Request' => 'request'], function () {
+			Request::enableHttpMethodParameterOverride();
 			return Request::createFromGlobals();
 		});
 		$this->singleton(['Chestnut\Foundation\Http\Router' => 'route']);
 		$this->singleton(['Chestnut\Foundation\Http\Response' => 'response']);
 		$this->singleton(['Chestnut\Foundation\Http\Session' => 'session']);
+		$this->singleton(['Chestnut\Component\Auth\Auth' => 'auth']);
 
 		$this->register(['Symfony\Component\HttpFoundation\Cookie' => 'cookie']);
-
-		$this->register(['Chestnut\Foundation\Dispatcher' => 'dispatch']);
 		$this->register(['Chestnut\Foundation\View\View' => 'view']);
 
 		$this->instance('config', new Parameter);
@@ -97,11 +104,13 @@ class Application extends Container implements ContainerContract {
 
 	public function registerAlias() {
 		foreach (config('app.alias', [
-			'Route' => 'Chestnut\Foundation\Http\Router',
+			'Auth' => 'Chestnut\Component\Auth\Auth',
 			'Model' => 'Chestnut\Foundation\Database\Model',
+			'Middleware' => 'Chestnut\Component\Middleware',
+			'Route' => 'Chestnut\Foundation\Http\Router',
 			'Schema' => 'Chestnut\Foundation\Database\Schema',
 			'Session' => 'Chestnut\Foundation\Http\Session',
-			'Middleware' => 'Chestnut\Component\Middleware',
+			'View' => 'Chestnut\Foundation\View\View',
 		]) as $alias => $className) {
 			class_alias($className, $alias, true);
 		}
@@ -112,17 +121,15 @@ class Application extends Container implements ContainerContract {
 			date_default_timezone_set($this->config->get('app.timezone'));
 		}
 
-		$this->session->start();
-
 		$this->instance('current', $this->route->match(
 			$this->request->method(),
 			$this->request->path()
 		));
 
-		if (!$this->callMiddleware()) {
-			$middleware = end($this->middleware);
-			$middleware->call();
-		}
+		View::addGlobal('__current_parent', $this->current->getParent());
+		View::addGlobal('__current', $this->current->getIdentifier());
+
+		$this->callMiddleware();
 	}
 
 	public function call() {
@@ -148,6 +155,14 @@ class Application extends Container implements ContainerContract {
 			$object = $this->current->dispatch($this);
 			$result = ob_get_clean();
 
+			if (!$object && !$result) {
+				return;
+			}
+
+			if ($object instanceof View) {
+				$result = $object->display();
+			}
+
 			if (strlen($result) === 0) {
 				$this->response->setContent($object);
 			} else {
@@ -166,11 +181,9 @@ class Application extends Container implements ContainerContract {
 	}
 
 	public function callMiddleware() {
-		while (count($this->middleware) > 0) {
-			$middleware = array_shift($this->middleware);
-
-			if (!$middleware->call($this->request)) {
-				return false;
+		while ($middleware = array_shift($this->middleware)) {
+			if (!$middleware->call($this->request) && $end = end($this->middleware)) {
+				$end->call();
 			}
 		}
 	}

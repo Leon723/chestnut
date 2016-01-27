@@ -1,5 +1,7 @@
 <?php namespace Chestnut\Foundation\Database;
 
+use Chestnut\Support\Parameter;
+
 class QueryManager {
 	protected $table;
 	protected $connection;
@@ -82,6 +84,10 @@ class QueryManager {
 		$this->parameters->replace([]);
 	}
 
+	public function freshSelect() {
+		$this->sql->remove('select');
+	}
+
 	public function orderBy($column, $sort = 'DESC') {
 		$this->sql->set("order", [$column => $sort]);
 		return $this;
@@ -118,27 +124,41 @@ class QueryManager {
 			$this->select($columns);
 		}
 
-		$this->connection
-			->query($this->getQueryString())
-			->execute($this->parameters);
+		try {
+			$this->connection
+				->query($this->getQueryString())
+				->execute($this->parameters);
 
-		if ($fetch = $this->connection->fetchAll(\PDO::FETCH_OBJ)) {
-			$this->applyToModel($fetch);
+			if ($fetch = $this->connection->fetchAll(\PDO::FETCH_OBJ)) {
+				return $this->applyToModel($fetch);
+			} else {
+				return false;
+			}
+		} catch (\PDOException $e) {
+			if ($e->getCode() === 42 && method_exists($this->model, 'schema')) {
+				$schema = new Schema($this->table);
+				call_user_func([$this->model, 'schema'], $schema);
+				$this->connection->query($schema->create())->execute();
+
+				return $this->get($columns);
+			}
+
+			throw $e;
 		}
-
-		return $this;
 	}
 
 	public function all($columns = ['*']) {
 		return $this->get($columns);
 	}
 
-	public function one($where, $columns = ['*']) {
-		if (!is_array($where)) {
-			$this->where('id', $where);
-		} else {
-			foreach ($where as $column => $value) {
-				$this->where($column, $value);
+	public function one($where = null, $columns = ['*']) {
+		if (!is_null($where)) {
+			if (!is_array($where)) {
+				$this->where('id', $where);
+			} else {
+				foreach ($where as $column => $value) {
+					$this->where($column, $value);
+				}
 			}
 		}
 
@@ -146,23 +166,52 @@ class QueryManager {
 			$this->select($columns);
 		}
 
+		try {
+			$this->connection
+				->query($this->getQueryString())
+				->execute($this->parameters);
+
+			if ($fetch = $this->connection->fetch(\PDO::FETCH_OBJ)) {
+				return $this->applyToModel($fetch);
+			} else {
+				return false;
+			}
+		} catch (\PDOException $e) {
+			if ($e->getCode() === 42 && method_exists($this->model, 'schema')) {
+				$schema = new Schema($this->table);
+				call_user_func([$this->model, 'schema'], $schema);
+				$this->connection->query($schema->create())->execute();
+
+				return $this->one($where, $columns);
+			}
+
+			throw $e;
+		}
+	}
+
+	public function count($columns = ['count(*) as count']) {
+		$this->freshSelect();
+		$this->select($columns);
+
 		$this->connection
 			->query($this->getQueryString())
 			->execute($this->parameters);
 
 		if ($fetch = $this->connection->fetch(\PDO::FETCH_OBJ)) {
-			$this->applyToModel($fetch);
+			return $fetch->count;
+		} else {
+			return false;
 		}
-
-		return $this;
 	}
 
-	public function find($where, $columns = ['*']) {
-		if (!is_array($where)) {
-			$this->where('id', $where);
-		} else {
-			foreach ($where as $column => $value) {
-				$this->where($column, $value);
+	public function find($where = null, $columns = ['*']) {
+		if (!is_null($where)) {
+			if (!is_array($where)) {
+				$this->where('id', $where);
+			} else {
+				foreach ($where as $column => $value) {
+					$this->where($column, $value);
+				}
 			}
 		}
 
@@ -174,9 +223,27 @@ class QueryManager {
 	}
 
 	public function applyToModel($fetch) {
-		$this->setOrigin($fetch);
-		$this->setProperties($fetch);
-		$this->setExist(true);
+		if (is_array($fetch)) {
+			$collection = new Parameter();
+			$class = get_class($this->model);
+
+			foreach ($fetch as $item) {
+				$instance = new $class((array) $item);
+
+				foreach ($this->getRelations()->keys() as $relationName) {
+					$instance->with($relationName);
+				}
+
+				$collection->push($instance);
+			}
+
+			return $collection;
+		}
+
+		$this->fill((array) $fetch);
+		$this->processRelations();
+
+		return $this;
 	}
 
 	public function insert() {
@@ -206,15 +273,15 @@ class QueryManager {
 
 	public function update() {
 
-		if ($this->getProperties()->compare($this->getOrigin())) {
+		if (empty($dirty = $this->getProperties()->compare($this->getOrigin()))) {
 			return;
 		}
 
 		$this->setTimestamp('update');
 
 		$this->connection
-			->query($this->getQueryString('update', $this->getProperties()))
-			->execute($this->getProperties()->merge($this->parameters));
+			->query($this->getQueryString('update', $dirty))
+			->execute($dirty->merge($this->parameters));
 	}
 
 	public function delete($where = null) {
