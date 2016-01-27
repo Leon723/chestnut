@@ -1,4 +1,7 @@
-<?php namespace Chestnut\Foundation\Database;
+<?php
+namespace Chestnut\Foundation\Database;
+
+use PDOException;
 
 class Connection {
 	protected $db;
@@ -21,7 +24,7 @@ class Connection {
 		try {
 			$this->sth->execute($parameters instanceof Collection ? $parameters->toArray() : $parameters);
 			return $this;
-		} catch (\PDOException $e) {
+		} catch (PDOException $e) {
 			throw $e;
 		}
 	}

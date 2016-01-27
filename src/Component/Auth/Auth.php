@@ -32,7 +32,6 @@ class Auth {
 					session()->migrate(86400);
 					$user->remember_token = $this->createRememberToken($account);
 					$user->save();
-
 				} else {
 					session()->migrate(0);
 					$user->remember_token = '';

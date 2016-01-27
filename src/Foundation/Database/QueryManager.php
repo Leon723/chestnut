@@ -193,14 +193,26 @@ class QueryManager {
 		$this->freshSelect();
 		$this->select($columns);
 
-		$this->connection
-			->query($this->getQueryString())
-			->execute($this->parameters);
+		try {
+			$this->connection
+				->query($this->getQueryString())
+				->execute($this->parameters);
 
-		if ($fetch = $this->connection->fetch(\PDO::FETCH_OBJ)) {
-			return $fetch->count;
-		} else {
-			return false;
+			if ($fetch = $this->connection->fetch(\PDO::FETCH_OBJ)) {
+				return $fetch->count;
+			} else {
+				return false;
+			}
+		} catch (\PDOException $e) {
+			if ($e->getCode() === 42 && method_exists($this->model, 'schema')) {
+				$schema = new Schema($this->table);
+				call_user_func([$this->model, 'schema'], $schema);
+				$this->connection->query($schema->create())->execute();
+
+				return $this->one($where, $columns);
+			}
+
+			throw $e;
 		}
 	}
 
@@ -259,6 +271,8 @@ class QueryManager {
 				$this->applyToModel($this->getProperties(true)->toArray());
 			}
 		} catch (\PDOException $e) {
+			var_dump($e);
+			exit;
 			if ($e->getCode() === 42 && method_exists($this->model, 'schema')) {
 				$schema = new Schema($this->table);
 				call_user_func([$this->model, 'schema'], $schema);

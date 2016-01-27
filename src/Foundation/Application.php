@@ -150,33 +150,33 @@ class Application extends Container implements ContainerContract {
 			return;
 		}
 
-		try {
-			ob_start();
-			$object = $this->current->dispatch($this);
-			$result = ob_get_clean();
+		// try {
+		ob_start();
+		$object = $this->current->dispatch($this);
+		$result = ob_get_clean();
 
-			if (!$object && !$result) {
-				return;
-			}
-
-			if ($object instanceof View) {
-				$result = $object->display();
-			}
-
-			if (strlen($result) === 0) {
-				$this->response->setContent($object);
-			} else {
-				$this->response->setContent($result);
-			}
-
-			$this->response->prepare($this->request);
-
+		if (!$object && !$result) {
 			return;
-		} catch (\Exception $e) {
-			if ($this->config->get('debug', true)) {
-				throw $e;
-			}
 		}
+
+		if ($object instanceof View) {
+			$result = $object->display();
+		}
+
+		if (strlen($result) === 0) {
+			$this->response->setContent($object);
+		} else {
+			$this->response->setContent($result);
+		}
+
+		$this->response->prepare($this->request);
+
+		// 	return;
+		// } catch (\Exception $e) {
+		// 	if ($this->config->get('debug', true)) {
+		// 		throw $e;
+		// 	}
+		// }
 
 	}
 
