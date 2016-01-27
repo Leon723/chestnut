@@ -209,7 +209,7 @@ class QueryManager {
 				call_user_func([$this->model, 'schema'], $schema);
 				$this->connection->query($schema->create())->execute();
 
-				return $this->one($where, $columns);
+				return $this->count($columns);
 			}
 
 			throw $e;

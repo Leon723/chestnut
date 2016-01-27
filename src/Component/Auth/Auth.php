@@ -69,8 +69,7 @@ class Auth {
 			if ($this->boot($user) && $this->_hasPermission(app('current')->getIdentifier())) {
 				return true;
 			} else {
-				// return static::PERMISSION_DENIED;
-				return false;
+				return static::PERMISSION_DENIED;
 			}
 		} else {
 			return $this->boot($user);
@@ -121,7 +120,7 @@ class Auth {
 		if (Model\User::where('user_name', $user['phone'])
 			->whereOr('email', $user['phone'])
 			->whereOr('phone', $user['phone'])
-			->count() > 0) {
+			->count()) {
 			return static::ACCOUNT_HAS_BEEN_REGISTERED;
 		}
 
