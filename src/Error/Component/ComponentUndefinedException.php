@@ -1,6 +1,9 @@
-<?php namespace Chestnut\Error\Component;
+<?php
+namespace Chestnut\Error\Component;
 
-class ComponentUndefinedException extends \Exception
-{
-  
+/**
+ * @author Liyang Zhang <zhangliyang@zhangliyang.name>
+ */
+class ComponentUndefinedException extends \Exception {
+
 }

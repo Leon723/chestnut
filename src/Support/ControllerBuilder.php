@@ -1,4 +1,5 @@
-<?php namespace Chestnut\Support;
+<?php
+namespace Chestnut\Support;
 
 use Chestnut\Contract\Support\Container as ContainerContract;
 use Chestnut\Contract\Support\ControllerBuilder as ControllerBuilderContract;
@@ -7,6 +8,9 @@ use ReflectionClass;
 use ReflectionFunction;
 use ReflectionMethod;
 
+/**
+ * @author Liyang Zhang <zhangliyang@zhangliyang.name>
+ */
 class ControllerBuilder implements ControllerBuilderContract {
 	/**
 	 * Class Name
@@ -99,7 +103,7 @@ class ControllerBuilder implements ControllerBuilderContract {
 		$missing = [];
 
 		foreach ($dependencies as $dependency) {
-			if (array_key_exists($name = $dependency->name, $parameters)) {
+			if (is_array($parameters) && array_key_exists($name = $dependency->name, $parameters)) {
 				$inject[$name] = $parameters[$name];
 			} elseif ($c->registered($name = $dependency->name)) {
 				$inject[$name] = $c->make($name);
@@ -108,6 +112,7 @@ class ControllerBuilder implements ControllerBuilderContract {
 			} elseif ($dependency->isDefaultValueAvailable()) {
 				$inject[$dependency->name] = $dependency->getDefaultValue();
 			} else {
+				echo 1;
 				$missing[] = $dependency->getClass() ? $dependency->getClass()->name : $dependency->name;
 			}
 		}

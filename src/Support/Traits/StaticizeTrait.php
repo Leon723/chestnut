@@ -1,6 +1,9 @@
 <?php
 namespace Chestnut\Support\Traits;
 
+/**
+ * @author Liyang Zhang <zhangliyang@zhangliyang.name>
+ */
 trait StaticizeTrait {
 	public static function __callStatic($method, $params) {
 		$component_name = static::getStaticizer();

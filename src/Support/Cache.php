@@ -1,42 +1,35 @@
-<?php namespace Chestnut\Support;
+<?php
+namespace Chestnut\Support;
 
-class Cache extends File
-{
-  private static function isExistsDir($dirName = '')
-  {
-    if(! is_dir(app()->cachePath())) {
-      static::makeDir();
-    }
+/**
+ * @author Liyang Zhang <zhangliyang@zhangliyang.name>
+ */
+class Cache extends File {
+	public static function makeDir($path = '') {
+		$path = app()->cachePath() . $path;
 
-    if(! is_dir(app()->cachePath() . $dirName)) {
-      static::makeDir($dirName);
-    }
-  }
+		parent::makeDir($path);
 
-  public static function makeDir($path = '')
-  {
-    $path = app()->cachePath() . $path;
+		chmod($path, 0777);
+	}
 
-    parent::makeDir($path);
+	public static function read($type, $fileName) {
+		if (!static::exists($type)) {
+			return false;
+		}
 
-    chmod($path, 0777);
-  }
+		$path = app()->cachePath() . $type . DIRECTORY_SEPARATOR . $fileName;
 
-  public static function read($type, $fileName)
-  {
-    static::isExistsDir($type);
+		return parent::readFile($path);
+	}
 
-    $path = app()->cachePath() . $type . DIRECTORY_SEPARATOR . $fileName;
+	public static function write($type, $filename, $content) {
+		if (!static::exists($type)) {
+			static::makeDir($type);
+		}
 
-    return parent::readFile($path);
-  }
+		$path = app()->cachePath() . $type . DIRECTORY_SEPARATOR . join(explode(DIRECTORY_SEPARATOR, $filename), '.');
 
-  public static function write($type, $filename, $content)
-  {
-    static::isExistsDir($type);
-
-    $path = app()->cachePath() . $type . DIRECTORY_SEPARATOR . $filename;
-
-    return parent::writeFile($path, $content);
-  }
+		return parent::writeFile($path, $content);
+	}
 }

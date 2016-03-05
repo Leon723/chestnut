@@ -1,10 +1,14 @@
-<?php namespace Chestnut\Support;
+<?php
+namespace Chestnut\Support;
 
 use ArrayAccess;
 use Chestnut\Contract\Support\Parameter as ParameterContract;
 use Closure;
 use IteratorAggregate;
 
+/**
+ * @author Liyang Zhang <zhangliyang@zhangliyang.name>
+ */
 class Parameter implements ParameterContract, ArrayAccess, IteratorAggregate {
 	protected $attributes;
 
@@ -104,7 +108,7 @@ class Parameter implements ParameterContract, ArrayAccess, IteratorAggregate {
 		}
 
 		foreach (explode(".", $key) as $segment) {
-			if (!array_key_exists($segment, $array)) {
+			if (!is_array($array) || !array_key_exists($segment, $array)) {
 				return $default;
 			}
 

@@ -1,14 +1,18 @@
-<?php namespace Chestnut\Support;
+<?php
+namespace Chestnut\Support;
 
 use ArrayAccess;
 use Chestnut\Contract\Support\Container as ContainerContract;
 use Chestnut\Support\ControllerBuilder;
 use Chestnut\Support\Parameter;
 
+/**
+ * @author Liyang Zhang <zhangliyang@zhangliyang.name>
+ */
 class Container implements ContainerContract, ArrayAccess {
 	protected $registry;
 	protected $instances;
-	protected $aliases;
+	protected $aliases = [];
 	protected $buildStack = [];
 
 	static protected $container;
@@ -16,7 +20,6 @@ class Container implements ContainerContract, ArrayAccess {
 	public function __construct() {
 		$this->registry = new Parameter;
 		$this->instances = new Parameter;
-		$this->aliases = new Parameter;
 	}
 
 	/**
@@ -127,7 +130,7 @@ class Container implements ContainerContract, ArrayAccess {
 	 * @return void
 	 */
 	public function alias($alias, $name) {
-		$this->aliases->set($alias, $name);
+		$this->aliases[$alias] = $name;
 	}
 
 	/**
@@ -138,7 +141,11 @@ class Container implements ContainerContract, ArrayAccess {
 	 * @return string
 	 */
 	public function getAlias($alias) {
-		return $this->aliases->get($alias, $alias);
+		if (isset($this->aliases[$alias])) {
+			return $this->aliases[$alias];
+		}
+
+		return $alias;
 	}
 
 	/**
@@ -151,7 +158,7 @@ class Container implements ContainerContract, ArrayAccess {
 			$alias = $name;
 			$name = $this->getAlias($name);
 
-			$this->aliases->remove($alias);
+			unset($this->aliases[$alias]);
 		}
 
 		if ($this->resolved($name)) {
@@ -197,7 +204,7 @@ class Container implements ContainerContract, ArrayAccess {
 	 * @return boolean
 	 */
 	public function isAlias($name) {
-		return $this->aliases->has($name);
+		return isset($this->aliases[$name]);
 	}
 
 	/**

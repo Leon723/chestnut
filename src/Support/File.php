@@ -1,7 +1,11 @@
-<?php namespace Chestnut\Support;
+<?php
+namespace Chestnut\Support;
 
 use Chestnut\Contract\Support\File as FileContract;
 
+/**
+ * @author Liyang Zhang <zhangliyang@zhangliyang.name>
+ */
 class File implements FileContract {
 	public static function readDir($path, $filter = 'php') {
 		if (!is_dir($path)) {
@@ -57,6 +61,10 @@ class File implements FileContract {
 		return false;
 	}
 
+	public static function exists($path) {
+		return file_exists($path);
+	}
+
 	public static function readFile($path) {
 		return file_get_contents($path);
 	}
@@ -65,7 +73,11 @@ class File implements FileContract {
 		return file_put_contents($path, $content);
 	}
 
-	public static function file_diff_time($file1, $file2) {
+	public static function diffTime($file1, $file2) {
+		if (!static::exists($file2)) {
+			return -1;
+		}
+
 		return filemtime($file1) - filemtime($file2);
 	}
 }

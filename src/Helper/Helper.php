@@ -2,6 +2,9 @@
 
 use Chestnut\Support\Container;
 
+/**
+ * @author Liyang Zhang <zhangliyang@zhangliyang.name>
+ */
 if (!function_exists('app')) {
 	function app($component = null, $parameters = []) {
 		if (is_null($component)) {
@@ -66,7 +69,7 @@ if (!function_exists('cookie')) {
 				'value' => $value,
 				'expire' => $expire,
 				'path' => $path,
-				'domain' => config('app.domain', 'chestnut.app'),
+				'domain' => config('app.domain'),
 				'secure' => $secure,
 				'httpOnly' => $httpOnly,
 			]);
@@ -114,6 +117,10 @@ if (!function_exists('session_flash')) {
 
 if (!function_exists('encrypt')) {
 	function encrypt($string) {
+		if (!$string) {
+			return false;
+		}
+
 		$key = config('app.app_key');
 		$iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_CBC);
 		$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
@@ -129,6 +136,10 @@ if (!function_exists('encrypt')) {
 
 if (!function_exists('decrypt')) {
 	function decrypt($encrypt) {
+		if (!$encrypt) {
+			return false;
+		}
+
 		$encrypt = base64_decode($encrypt);
 		$encrypt = substr($encrypt, 8);
 
@@ -147,18 +158,33 @@ if (!function_exists('decrypt')) {
 
 if (!function_exists('redirect')) {
 	function redirect($url, $status = 302, $header = []) {
+		try {
+			$goto = url($url);
+			$url = $goto;
+		} catch (Exception $e) {}
+
 		return app('response')->redirect($url, $status, $header);
 	}
 }
 
 if (!function_exists('back')) {
-	function back($go = false) {
-		if (!$go) {
-			$back = session('referer.' . request()->path());
-			return $back;
-		}
+	function back() {
 
-		return redirect(back());
+		$back = session('referer.' . request()->path());
+
+		if ($back) {
+			return '<a href="' . $back . '" class="btn icon-reply"> 返回</a>';
+		} else {
+			return '<a class="btn disabled icon-reply"> 返回</a>';
+		}
+	}
+}
+
+if (!function_exists('goback')) {
+	function goback() {
+		$goback = session('referer.' . request()->path());
+
+		return redirect($goback);
 	}
 }
 
@@ -202,13 +228,20 @@ if (!function_exists('end_with')) {
 	}
 }
 
-// if(!function_exists('csrf_field')) {
-// 	function csrf_field() {
-// 		$string =
-// 		$token = encrypt()
-// 		return '<input type="hidden" name="csrf_token" value="' .  . '">';
-// 	}
-// }
+if (!function_exists('has_permission')) {
+	function has_permission($permission) {
+		return Auth::hasPermission($permission);
+	}
+}
+
+if (!function_exists('csrf_field')) {
+	function csrf_field() {
+		$csrf_token = Auth::getAccount() . time();
+		session('csrf_token', $csrf_token);
+
+		return '<input type="hidden" name="csrf_token" value="' . encrypt(session('csrf_token')) . '">';
+	}
+}
 
 if (!function_exists('toUnderline')) {
 	function toUnderline($string) {

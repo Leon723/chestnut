@@ -1,53 +1,70 @@
-<?php namespace Chestnut\Foundation;
+<?php
+namespace Chestnut\Foundation;
 
+use CHestnut\Auth\Auth;
 use Chestnut\Contract\Support\Container as ContainerContract;
-use Chestnut\Foundation\Http\Request;
-use Chestnut\Foundation\Http\Response;
-use Chestnut\Foundation\View\View;
 use Chestnut\Support\Container;
 use Chestnut\Support\File;
 use Chestnut\Support\Parameter;
+use View;
 
+/**
+ * @author Liyang Zhang <zhangliyang@zhangliyang.name>
+ */
 class Application extends Container implements ContainerContract {
 	protected $middleware = [];
+	protected $registerdService = [];
+	protected $registerAliases = [];
 
 	public function __construct($basePath = null) {
 		parent::__construct();
 
 		static::setInstance($this);
 
-		$this->registerBaseComponent();
 		$this->initConfig($basePath);
-		$this->registerAlias();
+		$this->registerBaseComponent();
+		$this->resolveAlias();
 
 		$this->session->start();
 
-		$logger = new \Monolog\Logger('Chestnut');
-
-		$logger->pushHandler(new \Monolog\Handler\StreamHandler($this->cachePath('log.log'), \Monolog\Logger::ERROR));
+		if ($this->config->get('app.debug', false)) {
+			$whoops = new \Whoops\Run;
+			$whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
+			$whoops->register();
+		}
 
 		$this->registerMiddleware($this);
 	}
 
 	public function registerBaseComponent() {
+		$registers = $this->config->get('app.registers');
 
-		$this->singleton(['Chestnut\Foundation\Http\Request' => 'request'], function () {
-			Request::enableHttpMethodParameterOverride();
-			return Request::createFromGlobals();
-		});
-		$this->singleton(['Chestnut\Foundation\Http\Router' => 'route']);
-		$this->singleton(['Chestnut\Foundation\Http\Response' => 'response']);
-		$this->singleton(['Chestnut\Foundation\Http\Session' => 'session']);
-		$this->singleton(['Chestnut\Component\Auth\Auth' => 'auth']);
+		foreach ($registers as $register) {
+			$register = $this->resolveRegister($register);
+			$register->register();
+		}
 
-		$this->register(['Symfony\Component\HttpFoundation\Cookie' => 'cookie']);
-		$this->register(['Chestnut\Foundation\View\View' => 'view']);
-
-		$this->instance('config', new Parameter);
 		$this->instance('app', $this);
 	}
 
+	public function resolveRegister($register) {
+		if (isset($this->registerdService[$register])) {
+			return;
+		}
+
+		if (is_string($register)) {
+			$this->registerdService[$register] = true;
+			return new $register($this);
+		}
+	}
+
+	public function registerAlias($alias, $class) {
+		$this->registerAliases[$alias] = $class;
+	}
+
 	public function initConfig($basePath) {
+		$this->instance('config', new Parameter);
+
 		if (is_null($basePath)) {
 			$this->config->replace($this->getDefaultConfig());
 		} else {
@@ -65,6 +82,10 @@ class Application extends Container implements ContainerContract {
 				}
 			}
 		}
+	}
+
+	public function basePath($path = '') {
+		return $this['path.base'] . $path;
 	}
 
 	public function path($path = '') {
@@ -87,13 +108,6 @@ class Application extends Container implements ContainerContract {
 		return $this['path.private'] . $path;
 	}
 
-	public function getDefaultConfig() {
-		return [
-			'timezone' => 'Asia/Chongqing',
-			'debug' => true,
-		];
-	}
-
 	public function isDispatchable() {
 		return $this->resolved('current');
 	}
@@ -102,32 +116,21 @@ class Application extends Container implements ContainerContract {
 		array_unshift($this->middleware, $middleware);
 	}
 
-	public function registerAlias() {
-		foreach (config('app.alias', [
-			'Auth' => 'Chestnut\Component\Auth\Auth',
-			'Model' => 'Chestnut\Foundation\Database\Model',
-			'Middleware' => 'Chestnut\Component\Middleware',
-			'Route' => 'Chestnut\Foundation\Http\Router',
-			'Schema' => 'Chestnut\Foundation\Database\Schema',
-			'Session' => 'Chestnut\Foundation\Http\Session',
-			'View' => 'Chestnut\Foundation\View\View',
-		]) as $alias => $className) {
+	public function resolveAlias() {
+		foreach ($this->registerAliases as $alias => $className) {
 			class_alias($className, $alias, true);
 		}
 	}
 
 	public function boot() {
 		if ($this->config->has('app.timezone')) {
-			date_default_timezone_set($this->config->get('app.timezone'));
+			date_default_timezone_set($this->config->get('app.timezone', 'Asia/Chongqing'));
 		}
 
 		$this->instance('current', $this->route->match(
 			$this->request->method(),
 			$this->request->path()
 		));
-
-		View::addGlobal('__current_parent', $this->current->getParent());
-		View::addGlobal('__current', $this->current->getIdentifier());
 
 		$this->callMiddleware();
 	}
@@ -139,7 +142,7 @@ class Application extends Container implements ContainerContract {
 	}
 
 	public function dispatch() {
-		if ($this->response->isRedirection()) {
+		if ($this->response->isRedirection() || $this->response->isForbidden()) {
 			return;
 		}
 
@@ -150,39 +153,61 @@ class Application extends Container implements ContainerContract {
 			return;
 		}
 
-		// try {
-		ob_start();
-		$object = $this->current->dispatch($this);
-		$result = ob_get_clean();
+		if ($this->auth->check()) {
+			$xsrf_token = time() . $this->auth->getAccount();
 
-		if (!$object && !$result) {
-			return;
-		}
+			session('xsrf_token', $xsrf_token);
 
-		if ($object instanceof View) {
-			$result = $object->display();
-		}
-
-		if (strlen($result) === 0) {
-			$this->response->setContent($object);
+			cookie_remove('chestnut_xsrf_token');
+			cookie('chestnut_xsrf_token', $xsrf_token);
 		} else {
-			$this->response->setContent($result);
+			cookie_remove('chestnut_xsrf_token');
 		}
 
-		$this->response->prepare($this->request);
+		View::addGlobal('__current_parent', $this->current->getParent());
+		View::addGlobal('__current', $this->current->getIdentifier());
 
-		// 	return;
-		// } catch (\Exception $e) {
-		// 	if ($this->config->get('debug', true)) {
-		// 		throw $e;
-		// 	}
-		// }
+		try {
+			ob_start();
+			$object = $this->current->dispatch($this);
+			$result = ob_get_clean();
 
+			if (!$object && !$result) {
+				return;
+			}
+
+			if (strlen($result) === 0) {
+				$this->response->setContent($object);
+			} else {
+				$this->response->setContent($result);
+			}
+
+			$this->response->prepare($this->request);
+
+			return;
+		} catch (\Exception $e) {
+			if ($this->config->get('app.debug', false)) {
+				throw $e;
+			}
+		}
+
+	}
+
+	public function permissionDenined() {
+		$this->response->setStatusCode(Response::HTTP_FORBIDDEN);
+		$this->response->setContent('');
 	}
 
 	public function callMiddleware() {
 		while ($middleware = array_shift($this->middleware)) {
-			if (!$middleware->call($this->request) && $end = end($this->middleware)) {
+			$result = $middleware->call($this->request);
+
+			if ($result === Auth::PERMISSION_DENIED) {
+				$this->permissionDenined();
+				$result = false;
+			}
+
+			if ($result !== true && $end = end($this->middleware)) {
 				$end->call();
 			}
 		}
