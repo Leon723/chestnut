@@ -140,6 +140,12 @@ class Application extends Container implements ContainerContract {
 	public function call() {
 		$this->dispatch();
 
+		$xsrf_token = time() . $this->auth->getAccount();
+
+		session('xsrf_token', $xsrf_token);
+		cookie_remove('chestnut_xsrf_token');
+		cookie('chestnut_xsrf_token', $xsrf_token);
+
 		$this->response->send();
 	}
 
@@ -153,17 +159,6 @@ class Application extends Container implements ContainerContract {
 			$this->response->setContent($this->view->make('error.404')->render());
 
 			return;
-		}
-
-		if ($this->auth->check()) {
-			$xsrf_token = time() . $this->auth->getAccount();
-
-			session('xsrf_token', $xsrf_token);
-
-			cookie_remove('chestnut_xsrf_token');
-			cookie('chestnut_xsrf_token', $xsrf_token);
-		} else {
-			cookie_remove('chestnut_xsrf_token');
 		}
 
 		View::addGlobal('__current_parent', $this->current->getParent());

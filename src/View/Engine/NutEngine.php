@@ -163,7 +163,7 @@ class NutEngine extends Engine {
 		$key = $this->parseContent(['', array_shift($match[0])], true);
 		$value = current($match[0]) == 'in' ? '' : '=> ' . $this->parseContent(['', array_shift($match[0])], true);
 
-		return '<?php if(' . $parent . ' && isset(' . $parent . ')) foreach(' . $parent . ' as ' . $key . $value . ') { ?>';
+		return '<?php if(' . $parent . ' && !empty(' . $parent . ')) foreach(' . $parent . ' as ' . $key . $value . ') { ?>';
 	}
 
 	private function parseEndfor($value) {
