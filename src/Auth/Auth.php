@@ -46,15 +46,14 @@ class Auth {
 				if ($remember) {
 					session()->migrate(604800);
 					$user->remember_token = $this->createRememberToken($account);
-					$user->save();
 				} else {
 					session()->migrate(0);
 					$user->remember_token = '';
-					$user->save();
 				}
 
 				session('auth', $user->id);
 				$this->boot($user);
+				$user->save();
 
 				return static::ACCOUNT_LOGIN_ACCESS;
 			} else {
