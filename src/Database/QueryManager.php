@@ -63,6 +63,14 @@ class QueryManager {
 		return $this->where($column, $symbol, $value, 'OR');
 	}
 
+	public function whereLike($column, $value = null, $link = 'AND') {
+		return $this->where($column, "like", $value, $link);
+	}
+
+	public function whereOrLike($column, $value) {
+		return $this->whereLike($column, $value, 'OR');
+	}
+
 	public function whereBetween($column, $values, $link = 'AND') {
 		if ((int) $this->sql->length("where") === 0) {
 			$this->sql->set("where", [$column => ['symbol' => 'BETWEEN']]);
@@ -285,13 +293,15 @@ class QueryManager {
 		$this->setTimestamp();
 
 		try {
-			$this->connection
+			$result = $this->connection
 				->query($this->getQueryString('insert', $this->getProperties(true)))
 				->execute($this->getProperties(true));
 
 			if ($id = $this->connection->lastInsertId()) {
 				$this->getProperties()->set('id', $id);
 				$this->applyToModel($this->getProperties(true)->toArray());
+
+				return $result;
 			}
 		} catch (\PDOException $e) {
 			if (($e->getCode() === 42 || $e->getCode() === '42S02') && method_exists($this->model, 'schema')) {
@@ -314,7 +324,7 @@ class QueryManager {
 
 		$this->setTimestamp('update');
 
-		$this->connection
+		return $this->connection
 			->query($this->getQueryString('update', $dirty))
 			->execute($dirty->merge($this->parameters));
 	}
@@ -336,12 +346,20 @@ class QueryManager {
 
 		if ($this->isSoftDelete()) {
 			$this->setSoftDelete();
+			$this->writeLog();
+
 			return $this->update();
 		}
 
-		$this->connection
+		if ($result = $this->connection
 			->query($this->getQueryString('delete'))
-			->execute($this->parameters);
+			->execute($this->parameters)) {
+
+			$this->writeLog();
+
+			return $result;
+		}
+
 	}
 
 	public function create($array) {
@@ -361,7 +379,9 @@ class QueryManager {
 
 		$this->setProperties($array);
 
-		$this->insert();
+		if ($this->insert()) {
+			$this->writeLog();
+		}
 
 		return $this;
 	}

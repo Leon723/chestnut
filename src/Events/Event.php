@@ -1,6 +1,8 @@
 <?php
 namespace Chestnut\Events;
 
+use Chestnut\Contract\Support\Container as ContainerContract;
+
 /**
  * @author Liyang Zhang <zhangliyang@zhangliyang.name>
  * Chestnut Events Service
@@ -8,9 +10,9 @@ namespace Chestnut\Events;
 class Event {
 	protected $container;
 
-	protected $listener;
+	protected $listener = [];
 
-	public function __construct() {
-		# code...
+	public function __construct(ContainerContract $app) {
+		$this->container = $app;
 	}
 }

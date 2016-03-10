@@ -1,5 +1,7 @@
 <?php namespace Chestnut\Database;
 
+use Log;
+
 /**
  * @author Liyang Zhang <zhangliyang@zhangliyang.name>
  */
@@ -52,6 +54,10 @@ abstract class Model implements \Serializable {
 		$this->properties = new Collection($attributes);
 
 		$this->setExist(!empty($attributes));
+
+		if ($this->isExist() && method_exists($this, 'afterGet')) {
+			$this->afterGet();
+		}
 	}
 
 	public function getTable() {
@@ -81,11 +87,49 @@ abstract class Model implements \Serializable {
 	}
 
 	public function save() {
-		return $this->exist ? $this->query->update($this->properties) : $this->query->insert($this->properties);
+		if (method_exists($this, 'beforeSave')) {
+			$this->beforeSave();
+		}
+
+		$result = $this->exist ? $this->query->update($this->properties) : $this->query->insert($this->properties);
+
+		if (method_exists($this, 'afterSave')) {
+			$this->afterSave();
+		}
+
+		if ($result) {
+			$this->writeLog();
+		}
+
+		return $result;
 	}
 
 	public function update() {
-		return $this->query->update($this->properties);
+		$result = $this->query->update($this->properties);
+
+		if ($result) {
+			$this->writeLog();
+		}
+
+		return $result;
+	}
+
+	public function writeLog() {
+		if ($this->withoutLog) {
+			return;
+		}
+
+		$dirty = $this->getProperties()->compare($this->getOrigin());
+
+		if (empty($dirty)) {
+			$dirty = [date('Y-m-d H:i:s')];
+		}
+
+		if (!is_array($dirty)) {
+			$dirty = $dirty->toArray();
+		}
+
+		Log::write($dirty);
 	}
 
 	public function with($relations) {
@@ -245,6 +289,10 @@ abstract class Model implements \Serializable {
 		}
 
 		return $this->properties->has($key);
+	}
+
+	public function __unset($key) {
+		$this->properties->remove($key);
 	}
 
 	public function serialize() {

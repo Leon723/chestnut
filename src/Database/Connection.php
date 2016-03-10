@@ -25,7 +25,11 @@ class Connection {
 
 	public function execute($parameters = []) {
 		try {
-			$this->sth->execute($parameters instanceof Collection ? $parameters->toArray() : $parameters);
+			if ($parameters instanceof Collection) {
+				$parameters = $parameters->toArray();
+			}
+
+			$this->sth->execute($parameters);
 			return $this;
 		} catch (PDOException $e) {
 			throw $e;

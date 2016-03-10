@@ -14,7 +14,7 @@ class Log {
 		$module = app('current')->getIdentifier();
 
 		foreach ($modifies as $key => $value) {
-			array_push($log_content, [config("lang.{$key}") => $value]);
+			array_push($log_content, [config("lang.{$key}", $key) => $value]);
 		}
 
 		$log_content = serialize($log_content);

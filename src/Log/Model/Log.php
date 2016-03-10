@@ -1,8 +1,8 @@
 <?php
 namespace Chestnut\Log\Model;
 
-use Model;
-use Schema;
+use Chestnut\Database\Model;
+use Chestnut\Database\Schema;
 
 /**
  * @author Liyang Zhang <zhangliyang@zhangliyang.name>
@@ -13,6 +13,8 @@ class Log extends Model {
 		'module',
 		'log_content',
 	];
+
+	protected $withoutLog = true;
 
 	public function schema(Schema $table) {
 		$table->increment('id');

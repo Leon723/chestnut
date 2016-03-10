@@ -1,5 +1,5 @@
 <?php
-namespace Chestnut\View;
+namespace Chestnut\View\Filter;
 
 /**
  * @author Liyang Zhang <zhangliyang@zhangliyang.name>

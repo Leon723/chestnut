@@ -85,27 +85,30 @@ class NutEngine extends Engine {
 		} elseif (preg_match('/^[\'\"].*[\'\"]$/', $m[1])) {
 			$echo = "{$m[1]}";
 		} elseif (preg_match("/(.+?) * ([=]+) *(.+?)/", $m[1], $match)) {
-			$match[1] = $this->parseVar(['', $match[1]], true);
-			$match[3] = $this->parseVar(['', $match[3]], true);
+			$match[1] = $this->parseContent(['', $match[1]], true);
+			$match[3] = $this->parseContent(['', $match[3]], true);
 
 			$echo = $match[1] . " {$match[2]} " . $match[3];
-		} elseif (preg_match_all('/([.:]?)(\w+)(\((.+)?\))?/s', $m[1], $match)) {
-			$echo = "\$";
-			$operators = ['.' => ['->', ''], ":" => ['[\'', '\']']];
+		} elseif (preg_match_all('/([.:]?\$?)([\w]+)(\((.+)?\))?/s', $m[1], $match)) {
+
+			$echo = "";
+			$operators = ['.' => ['->', ''], ":" => ['[\'', '\']'], ':$' => ['[$', ']'], '$' => ['$', '']];
 
 			for ($i = 0; $i < count($match[0]); $i++) {
 				if (!empty($match[1][$i])) {
 					$operator = $operators[$match[1][$i]];
 
 					$echo .= "{$operator[0]}{$match[2][$i]}{$operator[1]}";
-				} elseif ($i == 0) {
+				} elseif ((int) $match[2][$i] > 0 && (int) $match[2][$i] == $match[2][$i]) {
 					$echo .= $match[2][$i];
+				} elseif ($i == 0) {
+					$echo .= '$' . $match[2][$i];
 				} else {
 					$echo .= '->' . $match[2][$i];
 				}
 
 				if (!empty($match[3][$i])) {
-					$value = $this->parseVar(['', $match[4][$i]], true);
+					$value = $this->parseContent(['', $match[4][$i]], true);
 					$echo .= '(' . $value . ')';
 				}
 			}
@@ -154,12 +157,13 @@ class NutEngine extends Engine {
 	}
 
 	private function parseFor($m) {
-		preg_match_all('/\w+/', $m[0], $match);
+		preg_match_all('/[\w\$\:\.\[\]\-\>]+/', $m[0], $match);
 
-		$parent = array_pop($match[0]);
-		$item = $match[0][1] !== 'in' ? '$' . $match[0][0] . '=> $' . $match[0][1] : '$' . $match[0][0];
+		$parent = $this->parseContent(['', array_pop($match[0])], true);
+		$key = $this->parseContent(['', array_shift($match[0])], true);
+		$value = current($match[0]) == 'in' ? '' : '=> ' . $this->parseContent(['', array_shift($match[0])], true);
 
-		return '<?php if($' . $parent . ' && isset($' . $parent . ')) foreach($' . $parent . ' as ' . $item . ') { ?>';
+		return '<?php if(' . $parent . ' && isset(' . $parent . ')) foreach(' . $parent . ' as ' . $key . $value . ') { ?>';
 	}
 
 	private function parseEndfor($value) {
@@ -172,6 +176,10 @@ class NutEngine extends Engine {
 
 	private function parseIf($value) {
 		return "<?php if({$value[0]}) { ?>";
+	}
+
+	private function parseElse() {
+		return "<?php } else { ?>";
 	}
 
 	private function parseEndif() {

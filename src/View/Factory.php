@@ -58,9 +58,6 @@ class Factory {
 
 		$view->data($data);
 
-		// $this->views[$filename] = $view;
-		// $this->renderStack[] = $filename;
-
 		return $view;
 	}
 
@@ -75,49 +72,6 @@ class Factory {
 	public function resolveEngine($engine) {
 		return $this->app->make($engine);
 	}
-
-	public function getRendering() {
-		$rendering = array_pop($this->renderStack);
-
-		if (is_null($rendering)) {
-			return $this->getLastRender();
-		}
-
-		return $this->views[$rendering];
-	}
-
-	// public function render() {
-	// 	$view = $this->getRendering();
-
-	// 	if (!$view->isCacheable()) {
-	// 		$injectEngine = $this->app->make(
-	// 			$view->getRequireEngine()
-	// 		);
-
-	// 		$view->setEngine($injectEngine);
-	// 	}
-
-	// 	$view->injectGlobalScope($this->globalScope);
-	// 	$view->render();
-
-	// 	$last = $this->getLastRender();
-
-	// 	$content = $last->render();
-
-	// 	return $content;
-	// }
-
-	// public function setLastRender($last) {
-	// 	$this->lastRender = $last;
-	// }
-
-	// public function hasLastRender() {
-	// 	return isset($this->lastRender);
-	// }
-
-	// public function getLastRender() {
-	// 	return $this->views[$this->lastRender];
-	// }
 
 	public function addGlobal($key, $value) {
 		if (is_array($key)) {

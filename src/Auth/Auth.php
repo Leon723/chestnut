@@ -1,6 +1,8 @@
 <?php
 namespace Chestnut\Auth;
 
+use Chestnut\Contract\Support\Container as ContainerContract;
+
 /**
  * @author Liyang Zhang <zhangliyang@zhangliyang.name>
  */
@@ -13,9 +15,21 @@ class Auth {
 	const ACCOUNT_REGISTER_SUSSECC = 12;
 	const PERMISSION_DENIED = 13;
 
+	protected $app;
 	protected $isLogin = false;
 	protected $user;
 	protected $permissions;
+	protected $model;
+
+	public function __construct(ContainerContract $app) {
+		$this->app = $app;
+
+		$this->model = $app->config->get('auth.model', 'Model\User');
+	}
+
+	public function getUser() {
+		return new $this->model;
+	}
 
 	public function login($account, $password, $remember) {
 
@@ -23,7 +37,7 @@ class Auth {
 			return true;
 		}
 
-		if ($user = Model\User::where('user_name', $account)
+		if ($user = $this->getUser()->where('user_name', $account)
 			->whereOr('email', $account)
 			->whereOr('phone', $account)
 			->with('role')
@@ -53,7 +67,7 @@ class Auth {
 
 	private function boot($user) {
 		if (!is_object($user)) {
-			$user = Model\User::one($user);
+			$user = $this->getUser()->one($user);
 		}
 
 		$this->user = $user;
@@ -119,12 +133,6 @@ class Auth {
 		return isset($this->permissions[$permission]) && $this->permissions[$permission];
 	}
 
-	public function isBrand() {
-		if ($this->role->role_id == 4) {
-			return true;
-		}
-	}
-
 	public function getFirstPermission() {
 		return key($this->permissions);
 	}
@@ -148,7 +156,7 @@ class Auth {
 	}
 
 	public function create($user) {
-		if (Model\User::where('user_name', $user['phone'])
+		if ($this->getUser()->where('user_name', $user['phone'])
 			->whereOr('email', $user['phone'])
 			->whereOr('phone', $user['phone'])
 			->count()) {
@@ -162,7 +170,8 @@ class Auth {
 
 		$user['salt'] = encrypt($user['salt']);
 
-		Model\User::create($user);
+		$user = $this->getUser()->create($user);
+		$this->boot($user->id);
 
 		return static::ACCOUNT_REGISTER_SUSSECC;
 	}
@@ -179,6 +188,10 @@ class Auth {
 		}
 
 		return $this->isLogin = $isLogin;
+	}
+
+	public function __call($method, $params) {
+		return call_user_func_array([$this->user, $method], $params);
 	}
 
 	private function createSalt($length = 8) {

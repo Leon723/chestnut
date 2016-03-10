@@ -115,8 +115,8 @@ class View {
 	}
 
 	public function isCacheable() {
-		if (File::diffTime($this->path . $this->filename, $this->cachePath . $this->filename) == 0) {
-			return false;
+		if (File::diffTime($this->path . $this->filename, $this->cachePath . $this->filename) >= 0) {
+			return true;
 		}
 
 		return false;
@@ -226,9 +226,5 @@ class View {
 
 	public function getData() {
 		return $this->data;
-	}
-
-	public function __toString() {
-		return $this->render();
 	}
 }

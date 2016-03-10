@@ -14,6 +14,7 @@ class User extends Model {
 		'email',
 		'password',
 		'salt',
+		'role',
 	];
 
 	protected $relation = [

@@ -3,9 +3,11 @@ namespace Chestnut\Foundation;
 
 use CHestnut\Auth\Auth;
 use Chestnut\Contract\Support\Container as ContainerContract;
+use Chestnut\Http\Response;
 use Chestnut\Support\Container;
 use Chestnut\Support\File;
 use Chestnut\Support\Parameter;
+use Chestnut\View\View as ViewContract;
 use View;
 
 /**
@@ -148,7 +150,7 @@ class Application extends Container implements ContainerContract {
 
 		if (!$this->isDispatchable()) {
 			$this->response->setStatusCode(Response::HTTP_NOT_FOUND);
-			$this->response->setContent(view('error.404'));
+			$this->response->setContent($this->view->make('error.404')->render());
 
 			return;
 		}
@@ -174,6 +176,10 @@ class Application extends Container implements ContainerContract {
 
 			if (!$object && !$result) {
 				return;
+			}
+
+			if ($object instanceof ViewContract) {
+				$result = $object->render();
 			}
 
 			if (strlen($result) === 0) {
