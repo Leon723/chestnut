@@ -51,7 +51,6 @@ class Auth {
 					$user->remember_token = '';
 				}
 
-				session('auth', $user->id);
 				$this->boot($user);
 				$user->save();
 
@@ -69,9 +68,14 @@ class Auth {
 			$user = $this->getUser()->one($user);
 		}
 
+		if (!$user) {
+			return false;
+		}
+
 		$this->user = $user;
 		$this->setPermissions($user->permissions);
 		$this->addNameToViewGlobal($user->user_name);
+		session('auth', $user->id);
 		return $this->setLogin(true);
 	}
 
@@ -137,10 +141,18 @@ class Auth {
 	}
 
 	public function getAccount() {
+		if (!isset($this->user)) {
+			return 'onekeymall';
+		}
+
 		return $this->user->phone;
 	}
 
 	public function getId() {
+		if (!isset($this->user)) {
+			return 0;
+		}
+
 		return $this->user->id;
 	}
 
@@ -170,6 +182,7 @@ class Auth {
 		$user['salt'] = encrypt($user['salt']);
 
 		$user = $this->getUser()->create($user);
+
 		$this->boot($user->id);
 
 		return static::ACCOUNT_REGISTER_SUSSECC;

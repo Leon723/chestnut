@@ -298,7 +298,7 @@ class QueryManager {
 				->execute($this->getProperties(true));
 
 			if ($id = $this->connection->lastInsertId()) {
-				$this->getProperties()->set('id', $id);
+				$this->getProperties(true)->set('id', $id);
 				$this->applyToModel($this->getProperties(true)->toArray());
 
 				return $result;
