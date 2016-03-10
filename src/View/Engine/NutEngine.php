@@ -84,7 +84,8 @@ class NutEngine extends Engine {
 			$echo = count($matches) > 2 ? "{$matches[1]}({$matches[2]})" : "$matches[0]";
 		} elseif (preg_match('/^[\'\"].*[\'\"]$/', $m[1])) {
 			$echo = "{$m[1]}";
-		} elseif (preg_match("/(.+?) * ([=]+) *(.+?)/", $m[1], $match)) {
+		} elseif (preg_match("/(.+?) * ([=]+) *(.+)/", $m[1], $match)) {
+
 			$match[1] = $this->parseContent(['', $match[1]], true);
 			$match[3] = $this->parseContent(['', $match[3]], true);
 
