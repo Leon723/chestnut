@@ -24,7 +24,7 @@ class Auth {
 	public function __construct(ContainerContract $app) {
 		$this->app = $app;
 
-		$this->model = $app->config->get('auth.model', 'Model\User');
+		$this->model = $app->config->get('auth.model', 'Model\Auth');
 	}
 
 	public function getUser() {
@@ -115,7 +115,9 @@ class Auth {
 			return;
 		}
 
-		$permissions = array_merge($permissions, explode(',', $this->user->role->permission));
+		if ($this->user->role) {
+			$permissions = array_merge($permissions, explode(',', $this->user->role->permission));
+		}
 
 		foreach ($permissions as $permission) {
 			if (!empty($permission)) {
@@ -137,6 +139,10 @@ class Auth {
 	}
 
 	public function getFirstPermission() {
+		if (key($this->permissions) == 'all') {
+			return 'admin.dashboard';
+		}
+
 		return key($this->permissions);
 	}
 

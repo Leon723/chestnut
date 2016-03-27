@@ -169,6 +169,14 @@ class Schema {
 		]);
 	}
 
+	public function timestamps($column, $default = "0") {
+		$this->set($column, [
+			"type" => "TIMESTAMP",
+			"nullable" => "NOT NULL",
+			"config" => "DEFAULT $default",
+		]);
+	}
+
 	/**
 	 * Add Timestamp Columns
 	 * @param  string $create Create Column Name

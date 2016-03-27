@@ -63,8 +63,20 @@ class QueryManager {
 		return $this->where($column, $symbol, $value, 'OR');
 	}
 
+	public function whereIn($column, $value, $link = 'AND') {
+		if (is_array($value)) {
+			$value = implode($value, ',');
+		}
+
+		return $this->where($column, 'IN', $value, $link);
+	}
+
+	public function whereOrIn($column, $value) {
+		return $this->whereIn($column, $value, 'OR');
+	}
+
 	public function whereLike($column, $value = null, $link = 'AND') {
-		return $this->where($column, "like", $value, $link);
+		return $this->where($column, "Like", $value, $link);
 	}
 
 	public function whereOrLike($column, $value) {
@@ -156,6 +168,10 @@ class QueryManager {
 			$this->where('deleted_at', '=', '0000-00-00 00:00:00');
 		}
 
+		if (method_exists($this->model, 'beforeGet')) {
+			$this->model->beforeGet();
+		}
+
 		try {
 			$this->connection
 				->query($this->getQueryString())
@@ -195,6 +211,10 @@ class QueryManager {
 
 		if (!$this->sql->has('select')) {
 			$this->select($columns);
+		}
+
+		if (method_exists($this->model, 'beforeGet')) {
+			$this->model->beforeGet();
 		}
 
 		try {
@@ -277,7 +297,7 @@ class QueryManager {
 					$instance->with($relationName);
 				}
 
-				$collection->push($instance);
+				$collection->push($instance->id, $instance);
 			}
 
 			return $collection;
@@ -322,6 +342,8 @@ class QueryManager {
 			return;
 		}
 
+		$this->freshWhere();
+		$this->where('id', $this->model->id);
 		$this->setTimestamp('update');
 
 		return $this->connection
@@ -379,9 +401,7 @@ class QueryManager {
 
 		$this->setProperties($array);
 
-		if ($this->insert()) {
-			$this->writeLog();
-		}
+		$this->save();
 
 		return $this;
 	}

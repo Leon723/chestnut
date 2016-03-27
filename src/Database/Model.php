@@ -129,6 +129,8 @@ abstract class Model implements \Serializable {
 			$dirty = $dirty->toArray();
 		}
 
+		$dirty = array_merge(['id' => $this->id], $dirty);
+
 		Log::write($dirty);
 	}
 
@@ -183,9 +185,15 @@ abstract class Model implements \Serializable {
 			}
 
 			$instance = new $relation['model'];
+			$localKey = $this->properties->get($relation['local_key']);
+
+			if (is_array($localKey)) {
+				$instance->whereIn($relation['foreign_key'], $localKey);
+			} else {
+				$instance->where($relation['foreign_key'], $localKey);
+			}
 
 			if ($instance = $instance
-				->where($relation['foreign_key'], $this->properties->get($relation['local_key']))
 				->{$relation['type']}()) {
 				$this->relations->set($relationName, $instance);
 			} else {
@@ -308,6 +316,10 @@ abstract class Model implements \Serializable {
 		$this->relations = new Collection;
 
 		$this->boot(true);
+	}
+
+	public function toArray() {
+		return $this->properties->toArray();
 	}
 
 	public function __call($method, $params) {

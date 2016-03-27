@@ -35,6 +35,20 @@ class Collection extends Parameter {
 		$this->paginate = $paginate;
 	}
 
+	public function toArray() {
+		return array_map(function ($value) {
+			if (is_object($value) && method_exists($value, 'toArray')) {
+				return $value->toArray();
+			}
+
+			return $value;
+		}, $this->attributes);
+	}
+
+	public function toJson() {
+		return json_encode($this->toArray());
+	}
+
 	public function getHiddenIterator($hidden) {
 		return $this->filter($hidden)->getIterator();
 	}

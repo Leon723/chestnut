@@ -7,19 +7,24 @@ use PDOException;
  * @author Liyang Zhang <zhangliyang@zhangliyang.name>
  */
 class Connection {
+	protected $driver;
+
+	protected $config;
+
 	protected $db;
 
 	protected $sth;
 
-	protected $prefix;
-
-	public function __construct($type = 'mysql') {
-		$config = config('database.' . $type);
-		$this->createConnection($type, $config);
+	public function __construct($driver = 'mysql') {
+		$this->config = config('database.' . $driver);
+		$this->driver = $driver;
 	}
 
 	public function query($sql) {
+		$this->createConnection($this->driver, $this->config);
+
 		$this->sth = $this->db->prepare($sql);
+
 		return $this;
 	}
 
@@ -30,14 +35,17 @@ class Connection {
 			}
 
 			$this->sth->execute($parameters);
-			return $this;
 		} catch (PDOException $e) {
 			throw $e;
+		} finally {
+			$this->db = null;
 		}
+
+		return $this;
 	}
 
-	public function createConnection($type, $config) {
-		switch ($type) {
+	public function createConnection($driver, $config) {
+		switch ($driver) {
 		case 'mysql':
 			$debug = config('app.debug', false);
 			$connect = "mysql:host=" . $config['host'] . ";dbname=" . $config['dbname'];
@@ -47,8 +55,6 @@ class Connection {
 				);
 
 				$this->db->setAttribute(\PDO::ATTR_ERRMODE, $debug ? \PDO::ERRMODE_EXCEPTION : \PDO::ERRMODE_SILENT);
-
-				$this->prefix = $config['prefix'];
 			} catch (\PDOException $e) {
 				throw $e;
 			}
@@ -57,7 +63,7 @@ class Connection {
 	}
 
 	public function getPrefix() {
-		return $this->prefix;
+		return $this->config['prefix'];
 	}
 
 	public function fetch($type) {

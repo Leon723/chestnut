@@ -39,6 +39,10 @@ class Filter {
 		}
 	}
 
+	private function number_format($object, $type) {
+		return "number_format({$object}, {$type})";
+	}
+
 	private function e($object, $type = 'e') {
 		return $this->escape($object, $type);
 	}

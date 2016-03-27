@@ -142,9 +142,11 @@ class Application extends Container implements ContainerContract {
 
 		$xsrf_token = time() . $this->auth->getAccount();
 
-		session('xsrf_token', $xsrf_token);
-		cookie_remove('chestnut_xsrf_token');
-		cookie('chestnut_xsrf_token', $xsrf_token);
+		if (!$this->request->isAjax()) {
+			session('xsrf_token', $xsrf_token);
+			cookie_remove('chestnut_xsrf_token');
+			cookie('chestnut_xsrf_token', $xsrf_token);
+		}
 
 		$this->response->send();
 	}
@@ -155,10 +157,7 @@ class Application extends Container implements ContainerContract {
 		}
 
 		if (!$this->isDispatchable()) {
-			$this->response->setStatusCode(Response::HTTP_NOT_FOUND);
-			$this->response->setContent($this->view->make('error.404')->render());
-
-			return;
+			return $this->notFound();
 		}
 
 		View::addGlobal('__current_parent', $this->current->getParent());
@@ -196,7 +195,12 @@ class Application extends Container implements ContainerContract {
 
 	public function permissionDenined() {
 		$this->response->setStatusCode(Response::HTTP_FORBIDDEN);
-		$this->response->setContent('');
+		$this->response->setContent($this->view->make('error.403')->render());
+	}
+
+	public function notFound() {
+		$this->response->setStatusCode(Response::HTTP_NOT_FOUND);
+		$this->response->setContent($this->view->make('error.404')->render());
 	}
 
 	public function callMiddleware() {

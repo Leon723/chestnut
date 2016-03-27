@@ -7,7 +7,7 @@ use Chestnut\Database\Schema;
 /**
  * @author Liyang Zhang <zhangliyang@zhangliyang.name>
  */
-class User extends Model {
+class Auth extends Model {
 	protected $fill = [
 		'user_name',
 		'phone',
@@ -19,12 +19,16 @@ class User extends Model {
 
 	protected $relation = [
 		'role' => [
-			'one', 'role', '', Role::class,
+			'one', 'role_id', '', Role::class,
 		],
 	];
 
 	public function schema(Schema $table) {
 		$table->increment('id');
+		$table->integer('member_id');
+		$table->string('wx');
+		$table->string('weibo');
+		$table->string('qq');
 		$table->string('user_name', 32, true);
 		$table->string('email', true);
 		$table->string('phone', 11, true);
@@ -32,7 +36,8 @@ class User extends Model {
 		$table->string('salt');
 		$table->string('remember_token', true);
 		$table->string('permissions', true);
+		$table->tinyinteger('role_id');
 		$table->timeStamp();
-		$table->unique('phone', 'email');
+		$table->unique('phone', 'email', 'wx', 'weibo', 'qq');
 	}
 }

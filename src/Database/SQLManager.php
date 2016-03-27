@@ -180,10 +180,18 @@ class SQLManager extends Parameter {
 			$result .= $config['link'] . ' ';
 		}
 
-		if ($config['symbol'] === 'BETWEEN') {
+		switch ($config['symbol']) {
+		case 'BETWEEN':
 			$result .= $this->getTableAlias() . ".`$column` {$config['symbol']} :{$column}0 AND :{$column}1";
-		} else {
+			break;
+
+		case 'IN':
+			$result .= "find_in_set(" . $this->getTableAlias() . ".`$column`, :{$column})";
+			break;
+
+		default:
 			$result .= $this->getTableAlias() . ".`$column` {$config['symbol']} :$column";
+			break;
 		}
 
 		return $result;

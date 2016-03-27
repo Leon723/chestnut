@@ -90,6 +90,10 @@ class Paginate {
 	}
 
 	public function render() {
+		if ($this->page = 1) {
+			return '';
+		}
+
 		return $this->render;
 	}
 

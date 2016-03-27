@@ -71,6 +71,24 @@ class NutEngine extends Engine {
 		return "<?php \$this->sectionEnd(); ?>";
 	}
 
+	private function parseSet($value) {
+		$value = explode(' = ', $value[0]);
+
+		$set = $this->parseContent(['', $value[0]], true);
+		$target = $this->parseContent(['', $value[1]], true);
+
+		return "<?php if(!isset({$set})) { {$set} = {$target}; } ?>";
+	}
+
+	private function parseReset($value) {
+		$value = explode(' = ', $value[0]);
+
+		$set = $this->parseContent(['', $value[0]], true);
+		$target = $this->parseContent(['', $value[1]], true);
+
+		return "<?php {$set} = {$target}; ?>";
+	}
+
 	private function parseShow() {
 		return "<?php \$this->showSection(); ?>";
 	}
@@ -80,18 +98,21 @@ class NutEngine extends Engine {
 			return $m[1];
 		}
 
+		if (is_numeric($m[1])) {
+			return $m[1];
+		}
+
 		if (preg_match('/^(\w+?)(?:\((.*)\))/', $m[1], $matches)) {
 			$echo = count($matches) > 2 ? "{$matches[1]}({$matches[2]})" : "$matches[0]";
 		} elseif (preg_match('/^[\'\"].*[\'\"]$/', $m[1])) {
 			$echo = "{$m[1]}";
-		} elseif (preg_match("/(.+?) * ([=]+) *(.+)/", $m[1], $match)) {
+		} elseif (preg_match("/(.+?) * ([=\+\-\*\/]+) *(.+)/", $m[1], $match)) {
 
 			$match[1] = $this->parseContent(['', $match[1]], true);
 			$match[3] = $this->parseContent(['', $match[3]], true);
 
 			$echo = $match[1] . " {$match[2]} " . $match[3];
 		} elseif (preg_match_all('/([.:]?\$?)([\w]+)(\((.+)?\))?/s', $m[1], $match)) {
-
 			$echo = "";
 			$operators = ['.' => ['->', ''], ":" => ['[\'', '\']'], ':$' => ['[$', ']'], '$' => ['$', '']];
 
@@ -100,7 +121,7 @@ class NutEngine extends Engine {
 					$operator = $operators[$match[1][$i]];
 
 					$echo .= "{$operator[0]}{$match[2][$i]}{$operator[1]}";
-				} elseif ((int) $match[2][$i] > 0 && (int) $match[2][$i] == $match[2][$i]) {
+				} elseif (is_numeric($match[2][$i])) {
 					$echo .= $match[2][$i];
 				} elseif ($i == 0) {
 					$echo .= '$' . $match[2][$i];
@@ -145,6 +166,9 @@ class NutEngine extends Engine {
 		case 'or':
 		case '?:':
 			return "isset({$object}) ? {$object} : {$operation[1]}";
+		case '&&':
+		case 'and':
+			return "{$object} ? $operation : ''";
 		case '?':
 			list($true, $false) = explode(':', $operation[1]);
 
@@ -177,6 +201,10 @@ class NutEngine extends Engine {
 
 	private function parseIf($value) {
 		return "<?php if({$value[0]}) { ?>";
+	}
+
+	private function parseElseif($value) {
+		return "<?php } elseif({$value[0]}) { ?>";
 	}
 
 	private function parseElse() {
