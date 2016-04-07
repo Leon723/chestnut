@@ -1,7 +1,7 @@
 <?php
 namespace Chestnut\Auth\Model;
 
-use Chestnut\Database\Model;
+use Chestnut\Database\Nut\Model;
 use Chestnut\Database\Schema;
 
 /**

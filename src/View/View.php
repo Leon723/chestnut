@@ -116,7 +116,7 @@ class View {
 
 	public function isCacheable() {
 		if (File::diffTime($this->path . $this->filename, $this->cachePath . $this->filename) >= 0) {
-			return true;
+			return false;
 		}
 
 		return false;

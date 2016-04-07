@@ -1,10 +1,13 @@
 <?php
-namespace Chestnut\Database;
+namespace Chestnut\Database\Nut;
+
+use IteratorAggregate;
 
 /**
  * @author Liyang Zhang <33543015@qq.com>
  */
-class Paginate {
+class Paginate implements IteratorAggregate {
+	protected $collection;
 	protected $count;
 	protected $page;
 	protected $perpage;
@@ -16,12 +19,19 @@ class Paginate {
 	protected $disabledTemp = '<a class="btn sm disabled">...</a>';
 	protected $prevNextTemp = '<a class="btn sm%s" %s>%s</a>';
 
-	public function __construct($count, $perpage = 10, $page = 0) {
+	public function __construct(Collection $collection, $count, $perpage = 10, $page = 0) {
+		$this->collection = $collection;
 		$this->count = $count;
 		$this->page = (int) $page;
 		$this->perpage = $perpage;
 
-		$this->initPaginate();
+		if ($this->count > $this->perpage) {
+			$this->initPaginate();
+		}
+	}
+
+	public function paginate() {
+		return $this->render;
 	}
 
 	public function initPaginate() {
@@ -90,11 +100,7 @@ class Paginate {
 	}
 
 	public function render() {
-		if ($this->page = 1) {
-			return '';
-		}
-
-		return $this->render;
+		return $this->render ?: '';
 	}
 
 	public function calcPageRange($total) {
@@ -117,5 +123,9 @@ class Paginate {
 		}
 
 		return [$start, $end];
+	}
+
+	public function getIterator() {
+		return $this->collection->getIterator();
 	}
 }

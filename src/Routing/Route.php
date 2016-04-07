@@ -1,5 +1,5 @@
 <?php
-namespace Chestnut\Http;
+namespace Chestnut\Routing;
 
 use ArrayAccess;
 use Chestnut\Http\Request;
@@ -191,7 +191,7 @@ class Route implements ArrayAccess {
 
 		array_unshift($args, $this['identifier_match']);
 
-		$match = call_user_func_array('sprintf', $args);
+		$match = count($args) > 1 ? call_user_func_array('sprintf', $args) : array_shift($args);
 
 		if ($this->matchUrl($match)) {
 			return $match;

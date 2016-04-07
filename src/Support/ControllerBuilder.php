@@ -112,7 +112,6 @@ class ControllerBuilder implements ControllerBuilderContract {
 			} elseif ($dependency->isDefaultValueAvailable()) {
 				$inject[$dependency->name] = $dependency->getDefaultValue();
 			} else {
-				echo 1;
 				$missing[] = $dependency->getClass() ? $dependency->getClass()->name : $dependency->name;
 			}
 		}

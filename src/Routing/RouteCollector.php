@@ -1,5 +1,5 @@
 <?php
-namespace Chestnut\Http;
+namespace Chestnut\Routing;
 
 use Closure;
 use IteratorAggregate;

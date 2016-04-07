@@ -160,8 +160,11 @@ if (!function_exists('redirect')) {
 	function redirect($url, $status = 302, $header = []) {
 		try {
 			$goto = url($url);
-			$url = $goto;
 		} catch (Exception $e) {}
+
+		if ($goto) {
+			$url = $goto;
+		}
 
 		return app('response')->redirect($url, $status, $header);
 	}
@@ -244,7 +247,7 @@ if (!function_exists('csrf_field')) {
 }
 
 if (!function_exists('toUnderline')) {
-	function toUnderline($string) {
+	function to_underline($string) {
 		return strtolower(preg_replace("#((?<=[a-z])(?=[A-Z]))#", "_", $string));
 	}
 }

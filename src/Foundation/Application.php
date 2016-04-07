@@ -3,6 +3,8 @@ namespace Chestnut\Foundation;
 
 use CHestnut\Auth\Auth;
 use Chestnut\Contract\Support\Container as ContainerContract;
+use Chestnut\Events\EventRegister;
+use Chestnut\Http\HttpRegister;
 use Chestnut\Http\Response;
 use Chestnut\Support\Container;
 use Chestnut\Support\File;
@@ -17,36 +19,25 @@ class Application extends Container implements ContainerContract {
 	protected $middleware = [];
 	protected $registerdService = [];
 	protected $registerAliases = [];
+	protected $bootstrap = [
+		'Boot\initEvent',
+	];
 
 	public function __construct($basePath = null) {
 		parent::__construct();
 
 		static::setInstance($this);
+		$this->instance('app', $this);
 
 		$this->initConfig($basePath);
 		$this->registerBaseComponent();
-		$this->resolveAlias();
 
-		$this->session->start();
-
-		if ($this->config->get('app.debug', false)) {
-			$whoops = new \Whoops\Run;
-			$whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
-			$whoops->register();
-		}
-
-		$this->registerMiddleware($this);
+		$this->bootstrap();
 	}
 
 	public function registerBaseComponent() {
-		$registers = $this->config->get('app.registers');
-
-		foreach ($registers as $register) {
-			$register = $this->resolveRegister($register);
-			$register->register();
-		}
-
-		$this->instance('app', $this);
+		(new EventRegister($this))->register();
+		(new HttpRegister($this))->register();
 	}
 
 	public function resolveRegister($register) {
@@ -84,6 +75,19 @@ class Application extends Container implements ContainerContract {
 				}
 			}
 		}
+
+		if ($this->config->has('app.timezone')) {
+			date_default_timezone_set($this->config->get('app.timezone', 'Asia/Chongqing'));
+		}
+	}
+
+	public function bootstrap() {
+		foreach ($this->bootstrap as $boot) {
+			$boot = __NAMESPACE__ . "\\" . $boot;
+			(new $boot($this))->boot();
+		}
+
+		$this->event->fire('init');
 	}
 
 	public function basePath($path = '') {
@@ -124,9 +128,10 @@ class Application extends Container implements ContainerContract {
 		}
 	}
 
-	public function boot() {
-		if ($this->config->has('app.timezone')) {
-			date_default_timezone_set($this->config->get('app.timezone', 'Asia/Chongqing'));
+	public function run() {
+		foreach ($this->bootstrap as $boot) {
+			$boot = __NAMESPACE__ . "\\" . $boot;
+			(new $boot($this))->boot();
 		}
 
 		$this->instance('current', $this->route->match(
@@ -134,10 +139,27 @@ class Application extends Container implements ContainerContract {
 			$this->request->path()
 		));
 
-		$this->callMiddleware();
+		if ($this->config->get('app.debug', false)) {
+			$whoops = new \Whoops\Run;
+			$whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
+			$whoops->register();
+		}
+
+		$this->event->fire('boot.boot');
 	}
 
-	public function call() {
+	public function registerServices() {
+		$registers = $this->config->get('app.registers');
+
+		foreach ($registers as $register) {
+			$register = $this->resolveRegister($register);
+			$register->register();
+		}
+	}
+
+	public function boot() {
+		$this->callMiddleware();
+
 		$this->dispatch();
 
 		$xsrf_token = time() . $this->auth->getAccount();

@@ -1,5 +1,5 @@
 <?php
-namespace Chestnut\Database;
+namespace Chestnut\Database\Nut;
 
 use Chestnut\Support\Parameter;
 
@@ -7,7 +7,10 @@ use Chestnut\Support\Parameter;
  * @author Liyang Zhang <zhangliyang@zhangliyang.name>
  */
 class Collection extends Parameter {
-	protected $paginate;
+
+	public function first() {
+		return reset($this->attributes);
+	}
 
 	public function compare($array) {
 		$compare = [];
@@ -25,14 +28,6 @@ class Collection extends Parameter {
 		}
 
 		return count($compare) ? new static($compare) : [];
-	}
-
-	public function paginate() {
-		return $this->paginate;
-	}
-
-	public function setPaginate($paginate) {
-		$this->paginate = $paginate;
 	}
 
 	public function toArray() {

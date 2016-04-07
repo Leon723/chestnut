@@ -12,8 +12,6 @@ class HttpRegister extends Register {
 
 		$this->registerResponse();
 
-		$this->registerRoute();
-
 		$this->registerSession();
 
 		$this->registerCookie();
@@ -31,12 +29,6 @@ class HttpRegister extends Register {
 
 	private function registerResponse() {
 		$this->app->singleton([Response::class => 'response']);
-	}
-
-	private function registerRoute() {
-		$this->app->singleton([Router::class => 'route']);
-		$this->app->registerAlias('Route', Router::class);
-
 	}
 
 	private function registerSession() {

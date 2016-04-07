@@ -19,6 +19,8 @@ class NutEngine extends Engine {
 
 	protected $hasLayout = false;
 
+	protected $switchStack = [];
+
 	public function render($content) {
 		return $this->parse($content);
 	}
@@ -213,6 +215,29 @@ class NutEngine extends Engine {
 
 	private function parseEndif() {
 		return '<?php } ?>';
+	}
+
+	private function parseSwitch($value) {
+
+		$switch = $this->parseContent(['', $value[0]], true);
+
+		$this->switchStack['object'] = $switch;
+	}
+
+	private function parseCase($value) {
+		if (isset($this->switchStack['length']) && isset($this->switchStack['object'])) {
+
+			return "<?php } if({$this->switchStack['object']} == {$value[0]}) {?>";
+		}
+
+		if (!isset($this->switchStack['length']) && isset($this->switchStack['object'])) {
+			$this->switchStack['length'] = 1;
+
+			return "<?php if({$this->switchStack['object']} == {$value[0]}) {?>";
+		}
+	}
+	private function parseEndswitch() {
+		return "<?php } ?>";
 	}
 
 	private function parseEnd($m) {

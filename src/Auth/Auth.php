@@ -38,8 +38,8 @@ class Auth {
 		}
 
 		if ($user = $this->getUser()->where('user_name', $account)
-			->whereOr('email', $account)
-			->whereOr('phone', $account)
+			->orWhere('email', $account)
+			->orWhere('phone', $account)
 			->with('role')
 			->one()) {
 			if ($user->password === $this->convertPassword(decrypt($user->salt), $password)) {
@@ -174,8 +174,8 @@ class Auth {
 
 	public function create($user) {
 		if ($this->getUser()->where('user_name', $user['phone'])
-			->whereOr('email', $user['phone'])
-			->whereOr('phone', $user['phone'])
+			->orWhere('email', $user['phone'])
+			->orWhere('phone', $user['phone'])
 			->count()) {
 			return static::ACCOUNT_HAS_BEEN_REGISTERED;
 		}
@@ -192,12 +192,6 @@ class Auth {
 		$this->boot($user->id);
 
 		return static::ACCOUNT_REGISTER_SUSSECC;
-	}
-
-	public function newModule($array) {
-		Model\Module::create($array);
-
-		return true;
 	}
 
 	public function setLogin($isLogin) {
