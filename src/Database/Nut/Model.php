@@ -134,12 +134,14 @@ abstract class Model {
 			: $instance->wherePrimary($this->{$local_key});
 
 			if ($callback instanceof Closure) {
-				$callback($instance);
+				$instance = $callback($instance);
 			}
 
-			$result = $type == 'one' ? $instance->one() : $instance->get();
+			if ($instance) {
+				$result = $type == 'one' ? $instance->one() : $instance->get();
 
-			return [$relationName, $result];
+				return [$relationName, $result->count() == 0 ? false : $result];
+			}
 		}
 
 		return [$relationName, false];

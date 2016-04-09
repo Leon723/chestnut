@@ -4,8 +4,8 @@ namespace Chestnut\Routing;
 use ArrayAccess;
 use Chestnut\Http\Request;
 use Chestnut\Support\Container as Container;
-use Chestnut\Support\ControllerBuilder;
 use Chestnut\Support\Parameter;
+use Chestnut\Support\Reflection\Reflector;
 use Closure;
 
 /**
@@ -34,7 +34,9 @@ class Route implements ArrayAccess {
 	}
 
 	public function setPattern($pattern) {
-		$pattern = is_array($this['prefix']) ? join($this['prefix'], '') . $pattern : $this['prefix'] . $pattern;
+		$prefix = is_array($this['prefix']) ? join($this['prefix'], '') : $this['prefix'];
+
+		$pattern = $prefix == '/' ? $pattern : $prefix . $pattern;
 
 		$this['pattern'] = preg_replace_callback('/{(\w*?)(\[\S*?\])?}/', function ($matches) {
 			return $this->parseUrl($matches);
@@ -43,7 +45,9 @@ class Route implements ArrayAccess {
 
 	public function setIdentifier($pattern) {
 
-		$pattern = is_array($this['prefix']) ? join($this['prefix'], '') . $pattern : $this['prefix'] . $pattern;
+		$prefix = is_array($this['prefix']) ? join($this['prefix'], '') : $this['prefix'];
+
+		$pattern = $prefix == '/' ? $pattern : $prefix . $pattern;
 
 		$identifier = preg_replace_callback('/{(\w*?)(\[\S*?\])?}/', function ($matches) {
 			return "%s";
@@ -99,11 +103,12 @@ class Route implements ArrayAccess {
 		} elseif (isset($this['namespace']) && !$controller instanceof Closure) {
 			$controller = $this['namespace'] . '\\' . $controller;
 		}
-		$builder = new ControllerBuilder($controller);
 
-		$builder->inject($app, $this['parameters']);
+		$builder = new Reflector($controller);
 
-		return $builder->build();
+		$builder->inject($this['parameters'], $app);
+
+		return $builder->resolve();
 	}
 
 	/**

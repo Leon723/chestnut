@@ -12,6 +12,7 @@ class Reflector {
 	protected $type;
 	protected $dependencies = [];
 	protected $injected = false;
+	protected $separator = '::';
 
 	public function __construct($object, $method = null) {
 		$this->init($object, $method);
@@ -20,13 +21,14 @@ class Reflector {
 	}
 
 	public function init($object, $method) {
-		if (is_string($object) && $controller = explode('::', $object)) {
-			$this->object = $controller[0];
-			$this->method = $controller[1];
-		} else {
-			$this->object = $object;
-			$this->method = $method;
+		if (is_string($object) && strpos($object, $this->separator)) {
+			list($object, $method) = explode($this->separator, $object);
+
+			return $this->init($object, $method);
 		}
+
+		$this->object = $object;
+		$this->method = $method;
 	}
 
 	public function isExists() {
@@ -51,12 +53,16 @@ class Reflector {
 	}
 
 	public function inject($params = [], ContainerContract $c = null) {
+		if ($this->injected()) {
+			return true;
+		}
+
 		$dependencies = $this->getDependencies();
 		$inject = [];
 		$missing = [];
 
 		foreach ($dependencies as $dependency) {
-			list($name, $dependency) = $this->getDependency($dependency, $parameter, $c);
+			list($name, $dependency) = $this->getDependency($dependency, $params, $c);
 
 			$inject[$name] = $dependency;
 		}
@@ -75,7 +81,7 @@ class Reflector {
 	}
 
 	public function getDependency($dependency, $parameters, $container) {
-		if (array_key_exists($name = $dependency->name, $parameters)) {
+		if (is_array($parameters) && array_key_exists($name = $dependency->name, $parameters)) {
 			return [$name, $parameters[$name]];
 		}
 

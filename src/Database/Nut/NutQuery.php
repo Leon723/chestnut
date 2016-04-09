@@ -122,15 +122,17 @@ class NutQuery {
 	}
 
 	public function count() {
-		$this->select(DB::raw('count(*) as count'));
-
-		$count = $this->query->get();
-		$count = reset($count);
+		$count = $this->model->newQuery();
+		$count = $this->injectWhere($count)->select(DB::raw('count(*) as count'))->one();
 
 		return $count->count;
 	}
 
 	public function wherePrimary($value) {
+		if (is_array($value)) {
+			return $this->wherePrimaries($value);
+		}
+
 		$this->where($this->model->getPrimaryKey(), $value);
 
 		return $this;
@@ -166,8 +168,7 @@ class NutQuery {
 
 		$collection = $this->get($columns);
 
-		$count = $this->model->newQuery();
-		$count = $this->injectWhere($count)->count();
+		$count = $this->count();
 
 		return new Paginate($collection, $count, $perpage, $page);
 	}

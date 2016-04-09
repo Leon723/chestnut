@@ -44,6 +44,8 @@ class ReflectionAnalysis {
 		case 'closure':
 			return $object;
 		case 'method':
+			$object = is_string($object) ? new $object : $object;
+
 			$reflector = new ReflectionMethod($object, $method);
 
 			return $reflector->getClosure($object);
@@ -70,7 +72,7 @@ class ReflectionAnalysis {
 		if (is_null($reflector->getConstructor())) {
 			return [];
 		} else {
-			$reflector->getConstructor()->getParameters();
+			return $reflector->getConstructor()->getParameters();
 		}
 	}
 }

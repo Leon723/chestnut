@@ -218,6 +218,10 @@ class Parameter implements ParameterContract, ArrayAccess, IteratorAggregate {
 		$this->remove($key);
 	}
 
+	public function __isset($key) {
+		return $this->has($Key);
+	}
+
 	public function getIterator() {
 		return new \ArrayIterator($this->attributes);
 	}

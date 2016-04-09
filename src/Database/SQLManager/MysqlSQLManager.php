@@ -92,9 +92,17 @@ class MysqlSQLManager extends SQLManager {
 		$result = 'where ';
 
 		foreach ($wheres as $where => $config) {
-			$result .= $config['symbol'] == 'between'
-			? "{$this->wrap($where)} {$config['symbol']} ? and ? "
-			: "{$this->wrap($where)} {$config['symbol']} ? ";
+			switch ($config['symbol']) {
+			case 'between':
+				$result .= "{$this->wrap($where)} {$config['symbol']} ? and ? ";
+				break;
+			case 'in':
+				$result .= "{$this->wrap($where)} {$config['symbol']} (?) ";
+				break;
+			default:
+				$result .= "{$this->wrap($where)} {$config['symbol']} ? ";
+				break;
+			}
 
 			$result .= $config['link'] . " ";
 		}

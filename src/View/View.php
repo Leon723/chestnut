@@ -7,6 +7,7 @@ use Chestnut\View\Engine\Engine;
 use Exception;
 use FatalThrowableError;
 use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * @author Liyang Zhang <zhangliyang@zhangliyang.name>
@@ -84,6 +85,7 @@ class View {
 
 	public function setFilename($filename) {
 		$filename = join(explode('.', $filename), DIRECTORY_SEPARATOR);
+		$this->filename = $filename;
 
 		foreach ($this->engines as $extension => $engine) {
 			if (file_exists($this->path . $filename . $extension)) {
@@ -128,7 +130,13 @@ class View {
 
 	public function render() {
 		if (!$this->isCacheable()) {
-			$content = File::readFile($this->path . $this->filename);
+
+			try {
+				$content = File::readFile($this->path . $this->filename);
+			} catch (Exception $e) {
+				throw new RuntimeException("View [{$this->filename}] not found");
+			}
+
 			$engine = $this->factory->resolveEngine($this->getRequireEngine());
 
 			$content = $engine->render($content);
@@ -226,5 +234,14 @@ class View {
 
 	public function getData() {
 		return $this->data;
+	}
+
+	public function addData($key, $value) {
+		$this->data[$key] = $value;
+	}
+
+	public function __call($key, $value) {
+		$this->addData($key, $value[0]);
+		return $this;
 	}
 }

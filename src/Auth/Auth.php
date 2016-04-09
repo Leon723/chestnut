@@ -27,8 +27,12 @@ class Auth {
 		$this->model = $app->config->get('auth.model', 'Model\Auth');
 	}
 
-	public function getUser() {
+	public function getModel() {
 		return new $this->model;
+	}
+
+	public function getUser() {
+		return $this->user;
 	}
 
 	public function login($account, $password, $remember) {
@@ -37,7 +41,7 @@ class Auth {
 			return true;
 		}
 
-		if ($user = $this->getUser()->where('user_name', $account)
+		if ($user = $this->getModel()->where('user_name', $account)
 			->orWhere('email', $account)
 			->orWhere('phone', $account)
 			->with('role')
@@ -65,7 +69,7 @@ class Auth {
 
 	private function boot($user) {
 		if (!is_object($user)) {
-			$user = $this->getUser()->one($user);
+			$user = $this->getModel()->with('member')->one($user);
 		}
 
 		if (!$user) {
@@ -173,7 +177,7 @@ class Auth {
 	}
 
 	public function create($user) {
-		if ($this->getUser()->where('user_name', $user['phone'])
+		if ($this->getModel()->where('user_name', $user['phone'])
 			->orWhere('email', $user['phone'])
 			->orWhere('phone', $user['phone'])
 			->count()) {
@@ -187,7 +191,7 @@ class Auth {
 
 		$user['salt'] = encrypt($user['salt']);
 
-		$user = $this->getUser()->create($user);
+		$user = $this->getModel()->create($user);
 
 		$this->boot($user->id);
 
