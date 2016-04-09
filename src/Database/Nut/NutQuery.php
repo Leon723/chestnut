@@ -194,7 +194,12 @@ class NutQuery {
 
 		$count = $this->count();
 
-		return new Paginate($collection, $count, $perpage, $page);
+		if ($count) {
+			return new Paginate($collection, $count, $perpage, $page);
+		}
+
+		return false;
+
 	}
 
 	public function injectWhere($query) {

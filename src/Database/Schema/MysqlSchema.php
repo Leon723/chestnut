@@ -25,7 +25,7 @@ class MysqlSchema extends Schema {
 	}
 
 	public function double($column, $length = 255, $nullable = false, $default = '') {
-		return $this->addColumn($column, 'float', $length, $nullable, $default);
+		return $this->addColumn($column, 'tinyint', $length, $nullable, $default);
 	}
 
 	public function toSQL() {

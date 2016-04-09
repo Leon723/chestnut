@@ -140,7 +140,7 @@ abstract class Model {
 			if ($instance) {
 				$result = $type == 'one' ? $instance->one() : $instance->get();
 
-				return [$relationName, $result->count() == 0 ? false : $result];
+				return [$relationName, !$result || $result->count() == 0 ? false : $result];
 			}
 		}
 
