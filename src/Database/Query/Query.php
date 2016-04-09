@@ -344,6 +344,33 @@ class Query {
 		return $this->connector->select($query, $this->getBindings());
 	}
 
+	public function isTableExists() {
+		if (!$this->table) {
+			return false;
+		}
+
+		$table = $this->connector->getPrefix() . $this->table;
+
+		$sql = "SELECT count(*) as count FROM information_schema.TABLES WHERE table_name ='{$table}';";
+
+		$count = $this->connector->select($sql);
+		$count = reset($count)->count;
+
+		if ($count > 0) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public function createTable($createQuery) {
+		if ($this->connector->select($createQuery)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
 	/**
 	 * Execute Insert Query
 	 * @return boolean isInsert
@@ -386,6 +413,14 @@ class Query {
 	 */
 	public function getLastInsertId($name = 'id') {
 		return $this->connector->getLastInsertId($name);
+	}
+
+	public function getDriver() {
+		return $this->driver;
+	}
+
+	public function getTable() {
+		return $this->connector->getPrefix() . $this->table;
 	}
 
 	/**

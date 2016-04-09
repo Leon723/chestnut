@@ -2,7 +2,7 @@
 namespace Chestnut\Auth\Model;
 
 use Chestnut\Database\Nut\Model;
-use Chestnut\Database\Schema;
+use Chestnut\Database\Schema\Schema;
 
 /**
  * @author Liyang Zhang <zhangliyang@zhangliyang.name>
@@ -25,19 +25,20 @@ class Auth extends Model {
 
 	public function schema(Schema $table) {
 		$table->increment('id');
-		$table->integer('member_id');
-		$table->string('wx');
-		$table->string('weibo');
-		$table->string('qq');
-		$table->string('user_name', 32, true);
-		$table->string('email', true);
-		$table->string('phone', 11, true);
-		$table->string('password', 64);
-		$table->string('salt');
-		$table->string('remember_token', true);
-		$table->string('permissions', true);
-		$table->tinyinteger('role_id');
+		$table->member_id('integer');
+		$table->wx('string');
+		$table->weibo('string');
+		$table->qq('string');
+		$table->user_name('string', 32, true);
+		$table->email('string', true);
+		$table->phone('string', 11, true);
+		$table->password('string', 64);
+		$table->salt('string');
+		$table->remember_token('string', true);
+		$table->permissions('string', true);
+		$table->role_id('tinyinteger');
 		$table->timeStamp();
+
 		$table->unique('phone', 'email', 'wx', 'weibo', 'qq');
 	}
 }

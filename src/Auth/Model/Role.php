@@ -2,7 +2,7 @@
 namespace Chestnut\Auth\Model;
 
 use Chestnut\Database\Nut\Model;
-use Chestnut\Database\Schema;
+use Chestnut\Database\Schema\Schema;
 
 /**
  * @author Liyang Zhang <zhangliyang@zhangliyang.name>
@@ -15,8 +15,8 @@ class Role extends Model {
 
 	public function schema(Schema $table) {
 		$table->increment('id');
-		$table->string('role_name');
-		$table->string('permission');
+		$table->role_name('string');
+		$table->permission('string');
 		$table->timeStamp();
 		$table->unique('role_name');
 	}

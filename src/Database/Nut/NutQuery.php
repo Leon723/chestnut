@@ -2,6 +2,7 @@
 namespace Chestnut\Database\Nut;
 
 use Chestnut\Database\Query\Query;
+use Chestnut\Database\Schema\MysqlSchema;
 use DB;
 
 /**
@@ -14,15 +15,38 @@ class NutQuery {
 
 	protected $pass = [
 		'insert', 'update', 'delete', 'count', 'lastQueryString',
-		'getWhere', 'getBinds',
+		'getWhere', 'getBinds', 'isTableExists',
 	];
 
 	public function __construct(Query $query) {
 		$this->query = $query;
 	}
 
+	public function tableExistsOrCreate() {
+		if ($this->isTableExists()) {
+			return true;
+		}
+
+		if (method_exists($this->model, 'schema')) {
+			$schema = $this->getSchema();
+
+			$this->model->schema($schema);
+
+			$this->createTable((string) $schema);
+		}
+	}
+
+	public function getSchema() {
+		switch ($this->query->getDriver()) {
+		case 'mysql':
+			return new MysqlSchema($this->query->getTable());
+		}
+	}
+
 	public function bindModel($model) {
 		$this->model = $model;
+
+		$this->tableExistsOrCreate();
 	}
 
 	public function find($id, $columns = ['*']) {
@@ -147,7 +171,7 @@ class NutQuery {
 	public function getModels($columns = ['*']) {
 		$this->model->fireEvent('beforeGet');
 
-		$result = $this->query->get($columns);
+		$result = $this->query->get();
 
 		return $this->model->injectCollection($result);
 	}
