@@ -28,7 +28,7 @@ class Auth {
 	}
 
 	public function getModel() {
-		return new $this->model;
+		return (new $this->model)->with('role', 'brand', 'address', 'member');
 	}
 
 	public function getUser() {
