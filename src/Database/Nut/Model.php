@@ -166,8 +166,8 @@ abstract class Model {
 		static::$event->listen($this->getClass() . ".{$event}", $this, $method);
 	}
 
-	public function fireEvent($event) {
-		return static::$event->fire($this->getClass() . '.' . $event);
+	public function fireEvent($event, $params = []) {
+		return static::$event->fire($this->getClass() . '.' . $event, $params);
 	}
 
 	public function newQuery() {

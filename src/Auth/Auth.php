@@ -44,7 +44,6 @@ class Auth {
 		if ($user = $this->getModel()->where('user_name', $account)
 			->orWhere('email', $account)
 			->orWhere('phone', $account)
-			->with('role')
 			->one()) {
 			if ($user->password === $this->convertPassword(decrypt($user->salt), $password)) {
 				if ($remember) {
@@ -58,18 +57,18 @@ class Auth {
 				$this->boot($user);
 				$user->save();
 
-				return static::ACCOUNT_LOGIN_ACCESS;
+				return AuthStatic::ACCOUNT_LOGIN_ACCESS;
 			} else {
-				return static::WRONG_PASSWORD;
+				return AuthStatic::WRONG_PASSWORD;
 			}
 		} else {
-			return static::ACCOUNT_NOT_FOUND;
+			return AuthStatic::ACCOUNT_NOT_FOUND;
 		}
 	}
 
 	private function boot($user) {
 		if (!is_object($user)) {
-			$user = $this->getModel()->with('member', 'role')->one($user);
+			$user = $this->getModel()->one($user);
 		}
 
 		if (!$user) {
@@ -77,9 +76,12 @@ class Auth {
 		}
 
 		$this->user = $user;
-		$this->setPermissions($user->permissions);
+
+		$this->setPermissions($user->permissions, $user->role->permission);
 		$this->addNameToViewGlobal($user->user_name);
+
 		session('auth', $user->id);
+
 		return $this->setLogin(true);
 	}
 
@@ -94,7 +96,7 @@ class Auth {
 			if ($this->boot($user_id) && $this->hasPermission(app('current')->getIdentifier())) {
 				return true;
 			} else {
-				return static::PERMISSION_DENIED;
+				return AuthStatic::PERMISSION_DENIED;
 			}
 		} else {
 			return $this->boot($user_id);
@@ -105,33 +107,17 @@ class Auth {
 		\View::addGlobal('__user_name', $name);
 	}
 
-	public function setPermissions($permissions) {
-		if (!is_array($permissions)) {
-			$permissions = func_get_args();
+	public function setPermissions($user, $role) {
+		if (!is_array($user)) {
+			$user = explode(',', $user);
 		}
 
-		if (strpos($permissions[0], ',')) {
-			$permissions = explode(',', $permissions[0]);
-		}
-
-		if (in_array('all', $permissions)) {
-			$this->permissions['all'] = true;
-			return;
-		}
-
-		if ($this->user->role) {
-			$permissions = array_merge($permissions, explode(',', $this->user->role->permission));
-		}
-
-		foreach ($permissions as $permission) {
-			if (!empty($permission)) {
-				$this->permissions[trim($permission)] = true;
-			}
-		}
+		$permissions = array_merge($user, $role);
+		$this->permissions = array_filter($permissions);
 	}
 
 	public function hasPermission($permission) {
-		if (isset($this->permissions['all']) && $this->permissions['all']) {
+		if (in_array('all', $this->permissions)) {
 			return true;
 		}
 
@@ -139,7 +125,7 @@ class Auth {
 			return true;
 		}
 
-		return isset($this->permissions[$permission]) && $this->permissions[$permission];
+		return in_array($permission, $this->permissions);
 	}
 
 	public function getFirstPermission() {
@@ -181,7 +167,7 @@ class Auth {
 			->orWhere('email', $user['phone'])
 			->orWhere('phone', $user['phone'])
 			->count()) {
-			return static::ACCOUNT_HAS_BEEN_REGISTERED;
+			return AuthStatic::ACCOUNT_HAS_BEEN_REGISTERED;
 		}
 
 		unset($user['repassword']);
@@ -195,7 +181,7 @@ class Auth {
 
 		$this->boot($user->id);
 
-		return static::ACCOUNT_REGISTER_SUSSECC;
+		return AuthStatic::ACCOUNT_REGISTER_SUSSECC;
 	}
 
 	public function setLogin($isLogin) {

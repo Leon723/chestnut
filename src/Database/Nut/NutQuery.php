@@ -169,7 +169,7 @@ class NutQuery {
 	}
 
 	public function getModels($columns = ['*']) {
-		$this->model->fireEvent('beforeGet');
+		$this->model->fireEvent('beforeGet', ['query' => $this]);
 
 		$result = $this->query->get();
 
