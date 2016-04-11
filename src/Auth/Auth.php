@@ -28,7 +28,7 @@ class Auth {
 	}
 
 	public function getModel() {
-		return (new $this->model)->with('role', 'brand', 'address', 'member');
+		return (new $this->model)->with('role', 'brand', 'member');
 	}
 
 	public function getUser() {
@@ -177,9 +177,9 @@ class Auth {
 
 		$user['salt'] = encrypt($user['salt']);
 
-		$user = $this->getModel()->create($user);
+		$id = $this->getModel()->create($user);
 
-		$this->boot($user->id);
+		$this->boot($id);
 
 		return AuthStatic::ACCOUNT_REGISTER_SUSSECC;
 	}

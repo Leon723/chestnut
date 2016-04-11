@@ -108,7 +108,14 @@ class NutQuery {
 			return false;
 		}
 
-		return $this->insert($create);
+		$result = $this->insert($create);
+
+		if ($id = $this->query->getLastInsertId()) {
+			return $id;
+		}
+
+		return $result;
+
 	}
 
 	public function update($id = null, $update = null) {

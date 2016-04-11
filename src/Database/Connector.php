@@ -51,7 +51,7 @@ class Connector {
 	}
 
 	public function getLastInsertId() {
-		return $this->connection->lastInsertId;
+		return $this->connection->lastInsertId();
 	}
 
 	public function select($sql, $binds = []) {
