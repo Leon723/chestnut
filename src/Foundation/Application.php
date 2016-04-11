@@ -233,10 +233,6 @@ class Application extends Container implements ContainerContract {
 				$this->permissionDenined();
 				$result = false;
 			}
-
-			if ($result !== true && $end = end($this->middleware)) {
-				$end->call();
-			}
 		}
 	}
 }
