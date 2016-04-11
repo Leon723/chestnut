@@ -69,7 +69,7 @@ class Auth {
 
 	private function boot($user) {
 		if (!is_object($user)) {
-			$user = $this->getModel()->with('member')->one($user);
+			$user = $this->getModel()->with('member', 'role')->one($user);
 		}
 
 		if (!$user) {
