@@ -160,11 +160,16 @@ class NutEngine extends Engine {
 	}
 
 	private function analysisAndCompileParameter($string) {
-		if (strpos($string, "::")) {
+		if (strpos($string, "::") || preg_match('/^[\'\"].+[\'\"]$/', $string)) {
 			return $string;
 		}
 
 		list($type, $match) = $this->analysisContent($string);
+
+		if ($string == "'admin.brand.show'") {
+			var_dump($match);
+			exit;
+		}
 
 		if ($match) {
 			return $this->$type($match);
