@@ -174,7 +174,7 @@ class NutEngine extends Engine {
 	}
 
 	private function convertParameter($parameter) {
-		if (is_numeric(trim($parameter[3])) || empty(trim($parameter[3]))) {
+		if (is_numeric(trim($parameter[3])) || empty(trim($parameter[3])) || preg_match('/^\$/', trim($parameter[3]))) {
 			return !empty($parameter[1])
 			? $parameter[0]
 			: $parameter[3];
@@ -184,7 +184,7 @@ class NutEngine extends Engine {
 			return "[" . $this->analysisAndCompileParameter($parameter[0]) . "]";
 		}
 
-		if ($parameter[1] === '.') {
+		if ($parameter[1] === '.' && !preg_match('/^[\'\"]|[\'\"]$/', $parameter[3])) {
 			return "->" . $parameter[2];
 		}
 
@@ -192,7 +192,7 @@ class NutEngine extends Engine {
 			return $parameter[1] . ' ' . $this->analysisAndCompileParameter($parameter[3]);
 		}
 
-		return !preg_match('/^[\'\"].+[\'\"]$/', $parameter[3])
+		return !preg_match('/^[\'\"]|[\'\"]$/', $parameter[3])
 		? "\$" . $parameter[3]
 		: $parameter[0];
 
