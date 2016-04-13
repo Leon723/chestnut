@@ -11,10 +11,10 @@ class NutEngine extends Engine {
 	protected $methodTag = ['{@', '}'];
 	protected $commitTag = ['{{--', '--}}'];
 
-	protected $parseQueue = [
-		"parseCommit",
-		"parseMethod",
-		"parseEcho",
+	protected $compileQueue = [
+		"compileCommit",
+		"compileMethod",
+		"compileEcho",
 	];
 
 	protected $hasLayout = false;
@@ -22,12 +22,12 @@ class NutEngine extends Engine {
 	protected $switchStack = [];
 
 	public function render($content) {
-		return $this->parse($content);
+		return $this->compile($content);
 	}
 
-	private function parse($content) {
-		foreach ($this->parseQueue as $parser) {
-			$content = $this->$parser($content);
+	private function compile($content) {
+		foreach ($this->compileQueue as $compiler) {
+			$content = $this->$compiler($content);
 		}
 
 		if ($this->hasLayout) {
@@ -37,194 +37,256 @@ class NutEngine extends Engine {
 		return $content;
 	}
 
-	private function parseCommit($content) {
+	private function compileCommit($content) {
 		return preg_replace("/{$this->commitTag[0]}\s*.*?\s*{$this->commitTag[1]}/s", '<?php /*$1*/?>', $content);
 	}
 
-	private function parseMethod($content) {
+	private function compileMethod($content) {
 		$callback = function ($m) {
-			return $this->{'parse' . ucfirst($m[1])}(array_slice($m, 2));
+			return $this->{'compile' . ucfirst($m[1])}(array_slice($m, 2));
 		};
 
 		return preg_replace_callback("/{$this->methodTag[0]}(.+?)(?:\:(.+?))?{$this->methodTag[1]}/s", $callback, $content);
 	}
 
-	private function parseEcho($content) {
+	private function compileEcho($content) {
 		$callback = function ($m) {
-			return $this->parseContent($m);
+			return $this->compileContent($m);
 		};
 
-		return preg_replace_callback("/{$this->contentTag[0]}\s*(.+?)\s*((\?\:|\s+or\s+|\?|\|)+\s*(.+?))?\s*{$this->contentTag[1]}/s", $callback, $content);
+		return preg_replace_callback("/{$this->contentTag[0]}\s*(.+?)\s*{$this->contentTag[1]}/s", $callback, $content);
 	}
 
-	private function parseLayout($value) {
+	private function compileLayout($value) {
 		$this->hasLayout = true;
 
 		return "<?php \$this->layout('{$value[0]}'); ?>";
 	}
 
-	private function parseSection($value) {
+	private function compileSection($value) {
 		$this->currentSection = $value[0];
 
 		return "<?php \$this->sectionStart('{$value[0]}'); ?>";
 	}
 
-	private function parseEndsection($value) {
+	private function compileEndsection($value) {
 		return "<?php \$this->sectionEnd(); ?>";
 	}
 
-	private function parseSet($value) {
+	private function compileSet($value) {
 		$value = explode(' = ', $value[0]);
 
-		$set = $this->parseContent(['', $value[0]], true);
-		$target = $this->parseContent(['', $value[1]], true);
+		$set = $this->convertParameter($value[0]);
+		$target = $this->convertParameter($value[1]);
 
 		return "<?php if(!isset({$set})) { {$set} = {$target}; } ?>";
 	}
 
-	private function parseReset($value) {
+	private function compileReset($value) {
 		$value = explode(' = ', $value[0]);
 
-		$set = $this->parseContent(['', $value[0]], true);
-		$target = $this->parseContent(['', $value[1]], true);
+		$set = $this->convertParameter($value[0]);
+		$target = $this->convertParameter($value[1]);
 
 		return "<?php {$set} = {$target}; ?>";
 	}
 
-	private function parseShow() {
+	private function compileShow() {
 		return "<?php \$this->showSection(); ?>";
 	}
 
-	private function parseContent($m, $force = false) {
-		if (empty($m[1])) {
-			return $m[1];
+	private function compileContent($m) {
+		list($type, $match, $filter) = $this->analysisContent($m[1]);
+
+		$result = $this->{$type}($match);
+
+		if ($filter) {
+			$filter = explode(' ', trim($filter));
+
+			$result = $this->processFilter($filter, $result);
 		}
 
-		if (is_numeric($m[1])) {
-			return $m[1];
+		return "<?php echo {$result} ?>";
+	}
+
+	private function compileExpression($match) {
+		$result = '';
+
+		foreach ($match as $expression) {
+			$result .= $this->convertParameter($expression);
 		}
 
-		if (preg_match('/^(\w+?)(?:\((.*)\))/', $m[1], $matches)) {
-			$echo = count($matches) > 2 ? "{$matches[1]}({$matches[2]})" : "$matches[0]";
-		} elseif (preg_match('/^[\'\"].*[\'\"]$/', $m[1])) {
-			$echo = "{$m[1]}";
-		} elseif (preg_match("/(.+?) * ([=\+\-\*\/]+) *(.+)/", $m[1], $match)) {
+		return $result;
+	}
 
-			$match[1] = $this->parseContent(['', $match[1]], true);
-			$match[3] = $this->parseContent(['', $match[3]], true);
+	private function compileFunction($match) {
+		list(, $function, $parameters) = $match;
+		$parameter = [];
 
-			$echo = $match[1] . " {$match[2]} " . $match[3];
-		} elseif (preg_match_all('/([.:]?\$?)([\w]+)(\((.+)?\))?/s', $m[1], $match)) {
-			$echo = "";
-			$operators = ['.' => ['->', ''], ":" => ['[\'', '\']'], ':$' => ['[$', ']'], '$' => ['$', '']];
+		foreach ($parameters as $param) {
+			$parameter[] = $this->analysisAndCompileParameter(trim($param));
+		}
 
-			for ($i = 0; $i < count($match[0]); $i++) {
-				if (!empty($match[1][$i])) {
-					$operator = $operators[$match[1][$i]];
+		return $function . "(" . join($parameter, ', ') . ")";
+	}
 
-					$echo .= "{$operator[0]}{$match[2][$i]}{$operator[1]}";
-				} elseif (is_numeric($match[2][$i])) {
-					$echo .= $match[2][$i];
-				} elseif ($i == 0) {
-					$echo .= '$' . $match[2][$i];
-				} else {
-					$echo .= '->' . $match[2][$i];
-				}
+	private function compileTernary($match) {
+		$type = $match[2];
 
-				if (!empty($match[3][$i])) {
-					$value = $this->parseContent(['', $match[4][$i]], true);
-					$echo .= '(' . $value . ')';
-				}
+		$operation = $this->analysisAndCompileParameter($match[1]);
+		$true = $this->analysisAndCompileParameter($match[3]);
+		$false = $this->analysisAndCompileParameter($match[4]);
+
+		switch ($type) {
+		case '&&':
+		case 'and':
+			return "{$operation} ? {$true} : {$false}";
+		case '?':
+			if ($true != "''") {
+				return "{$operation} ? {$true} : {$false}";
 			}
-		} else {
-			$echo = start_with($m[1], "$") ? "{$m[1]}" : "\${$m[1]}";
+
+			list($true, $false) = [$false, $true];
+		case 'or':
+		case '||':
+			return "isset({$operation}) ? {$true} : {$false}";
+		}
+	}
+
+	private function compileParameter($match) {
+		$result = '';
+
+		foreach ($match as $parameter) {
+			$result .= $this->convertParameter($parameter);
 		}
 
-		if (isset($m[3]) && $m[3] == '|') {
-			$filters = explode(' ', trim($m[4]));
+		return $result;
+	}
 
-			$echo = $this->processFilter($filters, $echo);
+	private function analysisAndCompileParameter($string) {
+		list(, $match) = $this->analysisContent($string);
+
+		if ($match) {
+			return $this->compileParameter($match);
 		}
 
-		if (count($m) > 3) {
-			$echo = $this->processOperation($echo, array_slice($m, 3));
+		return "''";
+	}
+
+	private function convertParameter($parameter) {
+		if (is_numeric(trim($parameter[3])) || empty(trim($parameter[3]))) {
+			return !empty($parameter[1])
+			? $parameter[0]
+			: $parameter[3];
 		}
 
-		if (!$force) {
-			return "<?php echo $echo; ?>";
-		} else {
-			return $echo;
+		if (empty($parameter[1]) && preg_match('/^\[.+\]$/', $parameter[0])) {
+			return "[" . $this->analysisAndCompileParameter($parameter[0]) . "]";
 		}
+
+		if ($parameter[1] === '.') {
+			return "->" . $parameter[2];
+		}
+
+		if (in_array($parameter[1], ['-', '+', '*', '/', '%'])) {
+			return $parameter[1] . ' ' . $this->analysisAndCompileParameter($parameter[3]);
+		}
+
+		return !preg_match('/^[\'\"].+[\'\"]$/', $parameter[3])
+		? "\$" . $parameter[3]
+		: $parameter[0];
+
+	}
+
+	private function analysisContent($string) {
+		if (strpos($string, '|')) {
+			list($string, $filter) = explode('|', $string);
+		}
+
+		if (!isset($filter)) {
+			$filter = '';
+		}
+
+		if (preg_match('/(\w+?)\((.*)\)/', $string, $match)) {
+			$match[2] = explode(',', $match[2]);
+
+			return ['compileFunction', $match, $filter];
+		}
+
+		if (preg_match('/([^?]*)(\?| or | and |\|{2}|&{2})([^:]*)(?::)?([^;]*)/', $string, $match)) {
+			return ['compileTernary', $match, $filter];
+		}
+
+		if (preg_match_all('/([.]?)(\[?([^.]+)\]?)/', $string, $match, PREG_SET_ORDER)) {
+			return ['compileParameter', $match, $filter];
+		}
+
+		if (preg_match_all('/([-\+\/\*\%]?)(\[?([^-\+\/\*\%]+)\]?)/', $string, $match, PREG_SET_ORDER)) {
+			return ['compileExpression', $match, $filter];
+		}
+
+		return ['', false, $filter];
 	}
 
 	private function processFilter($filters, $object) {
 		$filter = new Filter($filters);
 
-		return $filter->parse($object);
+		return $filter->compile($object);
 	}
 
-	private function processOperation($object, $operation) {
-		switch ($operation[0]) {
-		case 'or':
-		case '?:':
-			return "isset({$object}) ? {$object} : {$operation[1]}";
-		case '&&':
-		case 'and':
-			return "{$object} ? $operation : ''";
-		case '?':
-			list($true, $false) = explode(':', $operation[1]);
+	private function compileFor($m) {
 
-			$true = $this->parseContent(['', trim($true)], true);
-			$false = $this->parseContent(['', trim($false)], true);
-
-			return "{$object} ? {$true} : {$false}";
-		default:
-			return $object;
+		if (!list($key, $targer) = explode(' in ', $m[0])) {
+			return '<?php /* Cannot compile for loop: ' . $m[0] . ' /* ?>';
 		}
+
+		$target = $this->analysisAndCompileParameter($targer);
+
+		if (strpos($key, ',')) {
+			list($key, $value) = explode(',', $key);
+
+			$value = $this->analysisAndCompileParameter($value);
+		}
+
+		$key = $this->analysisAndCompileParameter($key);
+
+		return isset($value)
+		? '<?php if(' . $target . ' && !empty(' . $target . ')) foreach(' . $target . ' as ' . $key . $value . ') { ?>'
+		: '<?php if(' . $target . ' && !empty(' . $target . ')) foreach(' . $target . ' as ' . $key . ') { ?>';
 	}
 
-	private function parseFor($m) {
-		preg_match_all('/[\w\$\:\.\[\]\-\>]+/', $m[0], $match);
-
-		$parent = $this->parseContent(['', array_pop($match[0])], true);
-		$key = $this->parseContent(['', array_shift($match[0])], true);
-		$value = current($match[0]) == 'in' ? '' : '=> ' . $this->parseContent(['', array_shift($match[0])], true);
-
-		return '<?php if(' . $parent . ' && !empty(' . $parent . ')) foreach(' . $parent . ' as ' . $key . $value . ') { ?>';
-	}
-
-	private function parseEndfor($value) {
+	private function compileEndfor($value) {
 		return "<?php } ?>";
 	}
 
-	private function parseInclude($value) {
+	private function compileInclude($value) {
 		return "<?php echo \$this->factory->make('{$value[0]}')->render(); ?>";
 	}
 
-	private function parseIf($value) {
+	private function compileIf($value) {
 		return "<?php if({$value[0]}) { ?>";
 	}
 
-	private function parseElseif($value) {
+	private function compileElseif($value) {
 		return "<?php } elseif({$value[0]}) { ?>";
 	}
 
-	private function parseElse() {
+	private function compileElse() {
 		return "<?php } else { ?>";
 	}
 
-	private function parseEndif() {
+	private function compileEndif() {
 		return '<?php } ?>';
 	}
 
-	private function parseSwitch($value) {
+	private function compileSwitch($value) {
 
-		$switch = $this->parseContent(['', $value[0]], true);
+		$switch = $this->convertParameter($value[0]);
 
 		$this->switchStack['object'] = $switch;
 	}
 
-	private function parseCase($value) {
+	private function compileCase($value) {
 		if (isset($this->switchStack['length']) && isset($this->switchStack['object'])) {
 
 			return "<?php } if({$this->switchStack['object']} == {$value[0]}) {?>";
@@ -236,11 +298,11 @@ class NutEngine extends Engine {
 			return "<?php if({$this->switchStack['object']} == {$value[0]}) {?>";
 		}
 	}
-	private function parseEndswitch() {
+	private function compileEndswitch() {
 		return "<?php } ?>";
 	}
 
-	private function parseEnd($m) {
+	private function compileEnd($m) {
 		return "<?php } ?>";
 	}
 

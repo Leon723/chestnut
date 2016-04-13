@@ -15,7 +15,7 @@ class Filter {
 		return $this->filters;
 	}
 
-	public function parse($object) {
+	public function compile($object) {
 		foreach ($this->getFilters() as $filter) {
 			if (strpos($filter, ":")) {
 				$explode = explode(":", $filter);
