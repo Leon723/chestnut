@@ -23,7 +23,7 @@ Route::group(['namespace' => 'App\Controllers'], function () {
     require '../app/route.php';
 });
 
-$app->boot();
+$app->run();
 ```
 
 ## 美化链接

@@ -76,8 +76,8 @@ class NutEngine extends Engine {
 	private function compileSet($value) {
 		$value = explode(' = ', $value[0]);
 
-		$set = $this->analysisAndCompileParameter($value[0]);
-		$target = $this->analysisAndCompileParameter($value[1]);
+		$set = $this->convertParameter($value[0]);
+		$target = $this->convertParameter($value[1]);
 
 		return "<?php if(!isset({$set})) { {$set} = {$target}; } ?>";
 	}
@@ -85,8 +85,8 @@ class NutEngine extends Engine {
 	private function compileReset($value) {
 		$value = explode(' = ', $value[0]);
 
-		$set = $this->analysisAndCompileParameter($value[0]);
-		$target = $this->analysisAndCompileParameter($value[1]);
+		$set = $this->convertParameter($value[0]);
+		$target = $this->convertParameter($value[1]);
 
 		return "<?php {$set} = {$target}; ?>";
 	}
@@ -121,18 +121,13 @@ class NutEngine extends Engine {
 
 	private function compileFunction($match) {
 		list(, $function, $parameters) = $match;
+		$parameter = [];
 
-		foreach (array_filter($parameters) as $key => $param) {
-			$parameters[$key] = $this->analysisAndCompileParameter(trim($param));
+		foreach ($parameters as $param) {
+			$parameter[] = $this->analysisAndCompileParameter(trim($param));
 		}
 
-		if (empty($parameters)) {
-			$parameter = '';
-		} else {
-			$parameter = join($parameters, ', ');
-		}
-
-		return $function . "(" . $parameter . ")";
+		return $function . "(" . join($parameter, ', ') . ")";
 	}
 
 	private function compileTernary($match) {
@@ -142,11 +137,20 @@ class NutEngine extends Engine {
 		$true = $this->analysisAndCompileParameter($match[3]);
 		$false = $this->analysisAndCompileParameter($match[4]);
 
-		if (trim($type) == "?" && $true == "''") {
-			list($true, $false) = [$false, $true];
-		}
+		switch ($type) {
+		case '&&':
+		case 'and':
+			return "{$operation} ? {$true} : {$false}";
+		case '?':
+			if ($true != "''") {
+				return "{$operation} ? {$true} : {$false}";
+			}
 
-		return "{$operation} ? {$true} : {$false}";
+			list($true, $false) = [$false, $true];
+		case 'or':
+		case '||':
+			return "isset({$operation}) ? {$true} : {$false}";
+		}
 	}
 
 	private function compileParameter($match) {
@@ -160,44 +164,31 @@ class NutEngine extends Engine {
 	}
 
 	private function analysisAndCompileParameter($string) {
-		if (strpos($string, "::") || preg_match('/^[\'\"].+[\'\"]$/', $string)) {
-			return $string;
-		}
-
-		list($type, $match) = $this->analysisContent($string);
-
-		if ($string == "'admin.brand.show'") {
-			var_dump($match);
-			exit;
-		}
+		list(, $match) = $this->analysisContent($string);
 
 		if ($match) {
-			return $this->$type($match);
+			return $this->compileParameter($match);
 		}
 
 		return "''";
 	}
 
 	private function convertParameter($parameter) {
-		if (is_string($parameter) && empty($parameter)) {
-			return '';
-		}
-
 		if (is_numeric(trim($parameter[3])) || empty(trim($parameter[3])) || preg_match('/^\$/', trim($parameter[3]))) {
 			return !empty($parameter[1])
 			? $parameter[0]
-			: $parameter[2];
+			: $parameter[3];
 		}
 
 		if (empty($parameter[1]) && preg_match('/^\[.+\]$/', $parameter[0])) {
-			return "[" . $this->analysisAndCompileParameter($parameter[3]) . "]";
+			return "[" . $this->analysisAndCompileParameter($parameter[0]) . "]";
 		}
 
 		if ($parameter[1] === '.' && !preg_match('/^[\'\"]|[\'\"]$/', $parameter[3])) {
 			return "->" . $parameter[2];
 		}
 
-		if (in_array(trim($parameter[1]), ['-', '+', '*', '/', '%'])) {
+		if (in_array($parameter[1], ['-', '+', '*', '/', '%'])) {
 			return $parameter[1] . ' ' . $this->analysisAndCompileParameter($parameter[3]);
 		}
 
@@ -216,8 +207,8 @@ class NutEngine extends Engine {
 			$filter = '';
 		}
 
-		if (preg_match('/^(\w+?)\((.*)\)$/', trim($string), $match)) {
-			$match[2] = array_filter(explode(',', $match[2]));
+		if (preg_match('/(\w+?)\((.*)\)/', $string, $match)) {
+			$match[2] = explode(',', $match[2]);
 
 			return ['compileFunction', $match, $filter];
 		}
@@ -226,13 +217,13 @@ class NutEngine extends Engine {
 			return ['compileTernary', $match, $filter];
 		}
 
-		if (preg_match_all('/([.\-\+\/\*\% ]*)(\[?([\w\'\"\-\>\:\(\)]+)\]?)/', $string, $match, PREG_SET_ORDER)) {
+		if (preg_match_all('/([.]?)(\[?([^.]+)\]?)/', $string, $match, PREG_SET_ORDER)) {
 			return ['compileParameter', $match, $filter];
 		}
 
-		// if (preg_match_all('/([-\+\/\*\%]?)(\[?([^-\+\/\*\%]+)\]?)/', $string, $match, PREG_SET_ORDER)) {
-		// 	return ['compileExpression', $match, $filter];
-		// }
+		if (preg_match_all('/([-\+\/\*\%]?)(\[?([^-\+\/\*\%]+)\]?)/', $string, $match, PREG_SET_ORDER)) {
+			return ['compileExpression', $match, $filter];
+		}
 
 		return ['', false, $filter];
 	}
@@ -290,7 +281,7 @@ class NutEngine extends Engine {
 
 	private function compileSwitch($value) {
 
-		$switch = $this->analysisAndCompileParameter($value[0]);
+		$switch = $this->convertParameter($value[0]);
 
 		$this->switchStack['object'] = $switch;
 	}
