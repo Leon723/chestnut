@@ -94,6 +94,8 @@ class NutQuery {
 			$insert = $this->model->getProperties();
 		}
 
+		$insert['created_at'] = time();
+
 		$this->model->fireEvent('beforeSave');
 
 		$result = $this->query->insert($insert);
@@ -130,6 +132,8 @@ class NutQuery {
 		if (is_null($update)) {
 			$update = $this->model->getDirty();
 		}
+
+		$update['created_at'] = time();
 
 		$result = $this->query->update($update);
 

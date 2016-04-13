@@ -16,6 +16,8 @@ class Router {
 	 */
 	protected $routes;
 
+	protected $supportMethod = ['get', 'post', 'delete', 'put', 'patch', 'option', 'trace', 'any'];
+
 	public function __construct() {
 		$this->routes = new RouteCollector;
 	}
@@ -37,26 +39,33 @@ class Router {
 		return $this->routes->all();
 	}
 
-	public function url() {
-		$args = func_get_args();
-		$routeName = array_shift($args);
-		$method = 'GET';
+	public function url($routeName, $method = 'get') {
+		$params = [];
+
+		if (!in_array(strtolower($method), $this->supportMethod)) {
+			$params[] = $method;
+			$method = 'get';
+		}
+
 		if (func_num_args() > 2) {
-			$method = array_shift($args);
+			$args = func_get_args();
+
+			$params = array_merge($params, array_slice($args, 2));
 		}
 
 		if ($this->routes->hasRoute($routeName)) {
 			$route = $this->routes->getRoute($routeName);
+			$method = strtoupper($method);
 
 			if (!isset($route[$method])) {
 				throw new UndefinedRouteException("Undefined [{$routeName}] Route with [{$method}] method");
 			}
 
-			if ($url = $route[$method]->identifierMatch($args)) {
+			if ($url = $route[$method]->identifierMatch($params)) {
 				return 'http://' . config('app.domain', '') . $url;
 			}
 
-			throw new InvalidArgumentException("Missing args in [{$routeName}] Route");
+			throw new InvalidArgumentException("Missing parameter in [{$routeName}] Route");
 		}
 	}
 
