@@ -68,7 +68,9 @@ abstract class Model {
 
 		$model->setExists($exists);
 
-		$model->fireEvent('afterGet');
+		if ($exists) {
+			$model->fireEvent('afterGet');
+		}
 
 		return $model;
 	}
@@ -180,7 +182,7 @@ abstract class Model {
 	}
 
 	public function getProperties() {
-		return $this->properties->filter($this->getPrimaryKey());
+		return $this->properties->filter([$this->getPrimaryKey()])->toArray();
 	}
 
 	public function setDirty($key, $value) {

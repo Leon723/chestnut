@@ -89,18 +89,20 @@ class NutQuery {
 		return $models;
 	}
 
-	public function insert($insert = null) {
-		if (is_null($insert)) {
-			$insert = $this->model->getProperties();
-		}
-
-		$insert['created_at'] = date('Y-m-d H:i:s');
+	private function insert() {
+		$this->model->created_at = date('Y-m-d H:i:s');
 
 		$this->model->fireEvent('beforeSave');
+
+		$insert = $this->model->getProperties();
 
 		$result = $this->query->insert($insert);
 
 		$this->model->fireEvent('afterSave');
+
+		if ($id = $this->query->getLastInsertId()) {
+			return $id;
+		}
 
 		return $result;
 	}
@@ -110,17 +112,13 @@ class NutQuery {
 			return false;
 		}
 
-		$result = $this->insert($create);
+		$instance = $this->model->newInstance($create);
 
-		if ($id = $this->query->getLastInsertId()) {
-			return $id;
-		}
-
-		return $result;
+		return $instance->save();
 
 	}
 
-	public function update($id = null, $update = null) {
+	private function update($id = null, $update = null) {
 		if (is_null($id)) {
 			$id = $this->model->getPrimary();
 		}
