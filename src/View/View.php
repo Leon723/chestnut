@@ -117,11 +117,11 @@ class View {
 	}
 
 	public function isCacheable() {
-		if (File::diffTime($this->path . $this->filename, $this->cachePath . $this->filename) >= 0) {
+		if (File::diffTime($this->path . $this->filename, $this->cachePath . md5($this->filename))) {
 			return false;
 		}
 
-		return false;
+		return true;
 	}
 
 	public function hasEngine() {
@@ -148,7 +148,7 @@ class View {
 	}
 
 	protected function cache($content) {
-		Cache::write('views', $this->filename, $content);
+		Cache::write('views', md5($this->filename), $content);
 	}
 
 	public function renderContent() {
@@ -161,7 +161,7 @@ class View {
 		extract($properties);
 
 		try {
-			include $this->cachePath . join(explode(DIRECTORY_SEPARATOR, $this->filename), '.');
+			include $this->cachePath . md5($this->filename);
 		} catch (Exception $e) {
 			$this->handleViewException($e, $obLevel);
 		} catch (Throwable $e) {

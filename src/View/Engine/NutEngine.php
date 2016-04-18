@@ -132,8 +132,12 @@ class NutEngine extends Engine {
 		$true = $this->analysisAndCompileParameter($match[3]);
 		$false = $this->analysisAndCompileParameter($match[4]);
 
-		if (trim($type) == "?" && $true == "''") {
+		switch (trim($type)) {
+		case "or":
+		case "||":
+			$false = $operation;
 			list($true, $false) = [$false, $true];
+			break;
 		}
 
 		return "{$operation} ? {$true} : {$false}";
@@ -175,21 +179,27 @@ class NutEngine extends Engine {
 			return '';
 		}
 
-		if (is_numeric(trim($parameter[3])) || empty(trim($parameter[3])) || preg_match('/^\$/', trim($parameter[3]))) {
+		$parameter = array_map(function ($v) {
+			return trim($v);
+		}, $parameter);
+
+		if (is_numeric($parameter[3]) || empty($parameter[3]) || preg_match('/^\$/', $parameter[3])) {
 			return !empty($parameter[1])
 			? $parameter[0]
 			: $parameter[2];
 		}
 
-		if (empty($parameter[1]) && preg_match('/^\[.+\]$/', $parameter[0])) {
-			return "[" . $this->analysisAndCompileParameter($parameter[3]) . "]";
+		if (empty($parameter[1]) && preg_match('/^\[.+\]?$/', $parameter[0])) {
+			return preg_match('/\]$/', $parameter[0])
+			? "[" . $this->analysisAndCompileParameter($parameter[3]) . "]"
+			: "[" . $this->analysisAndCompileParameter($parameter[3]);
 		}
 
 		if ($parameter[1] === '.' && !preg_match('/^[\'\"]|[\'\"]$/', $parameter[3])) {
 			return "->" . $parameter[2];
 		}
 
-		if (in_array(trim($parameter[1]), ['-', '+', '*', '/', '%'])) {
+		if (in_array($parameter[1], ['-', '+', '*', '/', '%'])) {
 			return $parameter[1] . ' ' . $this->analysisAndCompileParameter($parameter[3]);
 		}
 
@@ -204,11 +214,13 @@ class NutEngine extends Engine {
 			list($string, $filter) = explode('|', $string);
 		}
 
+		$string = trim($string);
+
 		if (!isset($filter)) {
 			$filter = '';
 		}
 
-		if (preg_match('/^(\w+?)\((.*)\)$/', trim($string), $match)) {
+		if (preg_match('/^(\w+?)\((.*)\)$/', $string, $match)) {
 			$match[2] = array_filter(explode(',', $match[2]));
 
 			return ['compileFunction', $match, $filter];

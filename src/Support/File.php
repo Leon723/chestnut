@@ -75,9 +75,9 @@ class File implements FileContract {
 
 	public static function diffTime($file1, $file2) {
 		if (!static::exists($file2)) {
-			return -1;
+			return true;
 		}
 
-		return filemtime($file1) - filemtime($file2);
+		return filemtime($file1) - filemtime($file2) > 0 ? true : false;
 	}
 }
