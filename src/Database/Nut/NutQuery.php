@@ -100,11 +100,13 @@ class NutQuery {
 
 		$this->model->fireEvent('afterSave');
 
+		$this->model->setExists(true);
+
 		if ($id = $this->query->getLastInsertId()) {
-			return $id;
+			$this->model->{$this->model->getPrimaryKey} = $id;
 		}
 
-		return $result;
+		return isset($id) ? $id : $result;
 	}
 
 	public function create($create = null) {
@@ -115,7 +117,6 @@ class NutQuery {
 		$instance = $this->model->newInstance($create);
 
 		return $instance->save();
-
 	}
 
 	private function update($id = null, $update = null) {

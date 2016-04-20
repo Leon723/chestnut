@@ -66,7 +66,7 @@ class Auth {
 		}
 	}
 
-	private function boot($user) {
+	public function boot($user) {
 		if (!is_object($user)) {
 			$user = $this->getModel()->one($user);
 		}
@@ -76,7 +76,6 @@ class Auth {
 		}
 
 		$this->user = $user;
-
 		$this->setPermissions($user->permissions, $user->role->permission);
 		$this->addNameToViewGlobal($user->user_name);
 

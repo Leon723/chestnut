@@ -411,8 +411,8 @@ class Query {
 	 * Get Last Insert Id
 	 * @return integer Last Insert Id
 	 */
-	public function getLastInsertId($name = 'id') {
-		return $this->connector->getLastInsertId($name);
+	public function getLastInsertId() {
+		return $this->connector->getLastInsertId();
 	}
 
 	public function getDriver() {

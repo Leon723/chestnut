@@ -182,6 +182,10 @@ abstract class Model {
 	}
 
 	public function getProperties() {
+		if (!$this->guard) {
+			return $this->properties->toArray();
+		}
+
 		return $this->properties->filter([$this->getPrimaryKey()])->toArray();
 	}
 

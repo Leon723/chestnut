@@ -99,9 +99,9 @@ class Reflector {
 	}
 
 	public function resolve() {
-		if (!$this->type) {
-			return false;
-		}
+		// if (!$this->type) {
+		// 	return false;
+		// }
 
 		if (!$this->injected()) {
 			throw new \RuntimeException('This builder has not inject dependencies');

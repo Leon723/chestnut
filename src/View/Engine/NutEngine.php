@@ -128,9 +128,9 @@ class NutEngine extends Engine {
 	private function compileTernary($match) {
 		$type = $match[2];
 
-		$operation = $this->analysisAndCompileParameter($match[1]);
-		$true = $this->analysisAndCompileParameter($match[3]);
-		$false = $this->analysisAndCompileParameter($match[4]);
+		$operation = $this->analysisAndCompileParameter(trim($match[1]));
+		$true = $this->analysisAndCompileParameter(trim($match[3]));
+		$false = $this->analysisAndCompileParameter(trim($match[4]));
 
 		switch (trim($type)) {
 		case "or":
@@ -183,7 +183,7 @@ class NutEngine extends Engine {
 			return trim($v);
 		}, $parameter);
 
-		if (is_numeric($parameter[3]) || empty($parameter[3]) || preg_match('/^\$/', $parameter[3])) {
+		if (is_numeric($parameter[3]) || empty($parameter[3]) || preg_match('/^\$/', $parameter[3]) || strpos($parameter[3], "::")) {
 			return !empty($parameter[1])
 			? $parameter[0]
 			: $parameter[2];
