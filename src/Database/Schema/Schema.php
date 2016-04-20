@@ -16,8 +16,8 @@ abstract class Schema {
 		$this->table = $table;
 	}
 
-	public function addColumn($column, $type, $length = 255, $nullable = false, $default = '') {
-		$columnObj = new Column($column, $type, $length, $nullable, $default);
+	public function addColumn($column, $type, $length = 255, $nullable = false, $default = '', $primary = false, $auto_increment = false) {
+		$columnObj = new Column($column, $type, $length, $nullable, $default, $primary, $auto_increment);
 
 		$this->columns[] = $columnObj;
 

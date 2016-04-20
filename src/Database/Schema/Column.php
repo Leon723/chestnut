@@ -31,6 +31,9 @@ class Column implements StringAble {
 		$this->type($type);
 		$this->length = in_array($type, $this->default_length) ? $default_length[$type] : $length;
 		$this->nullable($nullable);
+
+		$this->primary = $primary;
+		$this->auto_increment = $auto_increment;
 	}
 
 	public function type($type) {
@@ -63,7 +66,7 @@ class Column implements StringAble {
 		return $this;
 	}
 
-	public function autoIncrement($auto_increment = true) {
+	public function auto_increment($auto_increment = true) {
 		$this->auto_increment = $auto_increment;
 
 		return $this;

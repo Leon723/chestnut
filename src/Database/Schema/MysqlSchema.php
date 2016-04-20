@@ -16,15 +16,15 @@ class MysqlSchema extends Schema {
 		return $this->addColumn($column, 'varchar', $length, $nullable, $default);
 	}
 
-	public function integer($column, $length = 255, $nullable = false, $default = '') {
+	public function integer($column, $length = 11, $nullable = false, $default = '') {
 		return $this->addColumn($column, 'int', $length, $nullable, $default);
 	}
 
-	public function tinyinteger($column, $length = 255, $nullable = false, $default = '') {
+	public function tinyinteger($column, $length = 4, $nullable = false, $default = '') {
 		return $this->addColumn($column, 'tinyint', $length, $nullable, $default);
 	}
 
-	public function double($column, $length = 255, $nullable = false, $default = '') {
+	public function double($column, $length = [11, 2], $nullable = false, $default = '') {
 		return $this->addColumn($column, 'tinyint', $length, $nullable, $default);
 	}
 
