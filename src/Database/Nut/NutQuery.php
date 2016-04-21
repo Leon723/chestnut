@@ -124,8 +124,6 @@ class NutQuery {
 			$id = $this->model->getPrimary();
 		}
 
-		$this->wherePrimary($id);
-
 		$this->model->fireEvent('beforeSave');
 
 		if (is_null($update)) {
@@ -133,6 +131,8 @@ class NutQuery {
 		}
 
 		$update['updated_at'] = date('Y-m-d H:i:s');
+
+		$this->wherePrimary($id);
 
 		$result = $this->query->update($update);
 

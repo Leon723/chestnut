@@ -48,7 +48,7 @@ abstract class Model {
 
 	public function fill($properties) {
 		$this->properties = new Collection($properties);
-		$this->properties = new Collection($properties);
+		$this->origin = new Collection($properties);
 	}
 
 	public function setExists($exists) {
@@ -194,7 +194,9 @@ abstract class Model {
 			$this->dirty = new Collection;
 		}
 
-		$this->dirty->set($key, $value);
+		if ($this->$key !== $this->origin->get($key)) {
+			$this->dirty->set($key, $value);
+		}
 	}
 
 	public function __get($key) {
@@ -212,6 +214,7 @@ abstract class Model {
 
 	public function __unset($key) {
 		$this->properties->remove($key);
+		$this->dirty->remove($key);
 	}
 
 	public function __isset($key) {
