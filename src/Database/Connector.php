@@ -55,7 +55,7 @@ class Connector {
 	}
 
 	public function select($sql, $binds = []) {
-		return $this->run($sql, $binds, function ($sth, $binds) {
+		return $this->run($sql, $binds, function ($sth, $binds) use ($sql) {
 			$sth->execute($binds);
 
 			return $sth->fetchAll($this->fetchType);

@@ -97,7 +97,7 @@ class MysqlSQLManager extends SQLManager {
 				$result .= "{$this->wrap($where)} {$config['symbol']} ? and ? ";
 				break;
 			case 'in':
-				$result .= "{$this->wrap($where)} {$config['symbol']} (?) ";
+				$result .= "find_in_set({$this->wrap($where)}, ?) ";
 				break;
 			default:
 				$result .= "{$this->wrap($where)} {$config['symbol']} ? ";
