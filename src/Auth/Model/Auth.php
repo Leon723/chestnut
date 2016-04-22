@@ -31,7 +31,7 @@ class Auth extends Model {
 		$table->weibo('string');
 		$table->qq('string');
 		$table->user_name('string', 32, true);
-		$table->email('string', true);
+		$table->email('string', 255, true);
 		$table->phone('string', 11, true);
 		$table->password('string');
 		$table->permissions('string', true);
