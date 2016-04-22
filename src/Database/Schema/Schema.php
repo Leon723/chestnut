@@ -91,7 +91,7 @@ abstract class Schema {
 	 * @return null
 	 */
 	public function softDelete($softDelete = 'deleted_at') {
-		$this->addColumn($softDelete, 'timestamp')->nullable(false)->default('0');
+		$this->addColumn($softDelete, 'timestamp')->nullable(false)->defaults('0');
 	}
 
 	/**
