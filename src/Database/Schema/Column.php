@@ -60,7 +60,7 @@ class Column implements StringAble {
 		return $this;
 	}
 
-	public function defaults($default) {
+	public function default($default) {
 		$this->default = (string) $default;
 
 		return $this;
