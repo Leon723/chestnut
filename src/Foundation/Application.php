@@ -1,7 +1,7 @@
 <?php
 namespace Chestnut\Foundation;
 
-use Chestnut\Auth\Auth;
+use Chestnut\Auth\AuthStatic as Auth;
 use Chestnut\Contract\Support\Container as ContainerContract;
 use Chestnut\Events\EventRegister;
 use Chestnut\Http\HttpRegister;

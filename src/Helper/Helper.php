@@ -53,37 +53,42 @@ if (!function_exists('view')) {
 
 if (!function_exists('cookie')) {
 	function cookie($name, $value = null, $expire = 0, $path = '/', $secure = false, $httpOnly = true) {
+
+		$name = start_with($name, 'chestnut_') ? $name : 'chestnut_' . $name;
+
 		if (is_null($value) && $cookie = app('request')->cookies->get($name)) {
-			return decrypt($cookie);
-		}
-
-		if (!app('request')->cookies->has($name)) {
-			$value = encrypt($value);
-
-			if (is_numeric($expire) && $expire > 0) {
-				$expire = time() + $expire;
+			try {
+				return decrypt($cookie);
+			} catch (Exception $e) {
+				return $cookie;
 			}
-
-			$cookie = app('cookie', [
-				'name' => $name,
-				'value' => $value,
-				'expire' => $expire,
-				'path' => $path,
-				'domain' => config('app.domain'),
-				'secure' => $secure,
-				'httpOnly' => $httpOnly,
-			]);
-
-			app('response')->headers->setCookie($cookie);
 		}
+
+		$value = $path === false ? $value : encrypt($value);
+
+		if (is_numeric($expire) && $expire > 0) {
+			$expire = time() + $expire;
+		}
+
+		$value === false ? '' : $value;
+
+		$cookie = app('cookie', [
+			'name' => $name,
+			'value' => $value,
+			'expire' => $value === false ? -1 : $expire,
+			'path' => $path,
+			'domain' => config('app.domain'),
+			'secure' => $secure,
+			'httpOnly' => $httpOnly,
+		]);
+
+		app('response')->headers->setCookie($cookie);
 	}
 }
 
 if (!function_exists('cookie_remove')) {
 	function cookie_remove($name) {
-		if (app('request')->cookies->has($name)) {
-			app('request')->cookies->remove($name);
-		}
+		cookie($name, false);
 	}
 }
 

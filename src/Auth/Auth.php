@@ -2,19 +2,12 @@
 namespace Chestnut\Auth;
 
 use Chestnut\Contract\Support\Container as ContainerContract;
+use Firebase\JWT\JWT;
 
 /**
  * @author Liyang Zhang <zhangliyang@zhangliyang.name>
  */
 class Auth {
-
-	const ACCOUNT_LOGIN_ACCESS = 8;
-	const ACCOUNT_NOT_FOUND = 9;
-	const WRONG_PASSWORD = 10;
-	const ACCOUNT_HAS_BEEN_REGISTERED = 11;
-	const ACCOUNT_REGISTER_SUSSECC = 12;
-	const PERMISSION_DENIED = 13;
-
 	protected $app;
 	protected $isLogin = false;
 	protected $user;
@@ -27,35 +20,13 @@ class Auth {
 		$this->model = $app->config->get('auth.model', 'Model\Auth');
 	}
 
-	public function getModel() {
-		return (new $this->model)->with('role', 'brand', 'member');
-	}
-
-	public function getUser() {
-		return $this->user;
-	}
-
 	public function login($account, $password, $remember) {
-
-		if ($this->check()) {
-			return true;
-		}
-
 		if ($user = $this->getModel()->where('user_name', $account)
 			->orWhere('email', $account)
 			->orWhere('phone', $account)
 			->one()) {
-			if ($user->password === $this->convertPassword(decrypt($user->salt), $password)) {
-				if ($remember) {
-					session()->migrate(604800);
-					$user->remember_token = $this->createRememberToken($account);
-				} else {
-					session()->migrate(0);
-					$user->remember_token = '';
-				}
-
+			if (password_verify($password, $user->password)) {
 				$this->boot($user);
-				$user->save();
 
 				return AuthStatic::ACCOUNT_LOGIN_ACCESS;
 			} else {
@@ -64,6 +35,12 @@ class Auth {
 		} else {
 			return AuthStatic::ACCOUNT_NOT_FOUND;
 		}
+	}
+
+	public function logout() {
+		cookie_remove('jwt');
+
+		return true;
 	}
 
 	public function boot($user) {
@@ -77,33 +54,56 @@ class Auth {
 
 		$this->user = $user;
 		$this->setPermissions($user->permissions, $user->role->permission);
-		$this->addNameToViewGlobal($user->user_name);
-
-		session('auth', $user->id);
 
 		return $this->setLogin(true);
 	}
 
-	public function check() {
-		if (!$this->isLogin && !session('auth')) {
+	public function check($token) {
+		if (is_null($token)) {
 			return false;
 		}
 
-		$user_id = session('auth');
-
-		if (app()->resolved('current')) {
-			if ($this->boot($user_id) && $this->hasPermission(app('current')->getIdentifier())) {
-				return true;
-			} else {
-				return AuthStatic::PERMISSION_DENIED;
+		if ($token = $this->decodeJsonWebToken($token)) {
+			if (time() > $token->expire) {
+				cookie_remove('jwt');
+				return false;
 			}
+
+			if ($token->aud !== $this->app->config->get('app.domain')) {
+				return false;
+			}
+
+			return $this->boot($token->iss);
 		} else {
-			return $this->boot($user_id);
+			return false;
 		}
 	}
 
-	public function addNameToViewGlobal($name) {
-		\View::addGlobal('__user_name', $name);
+	public function create($user) {
+		if ($this->getModel()->where('user_name', $user['phone'])
+			->orWhere('email', $user['phone'])
+			->orWhere('phone', $user['phone'])
+			->count()) {
+			return AuthStatic::ACCOUNT_HAS_BEEN_REGISTERED;
+		}
+
+		unset($user['repassword']);
+
+		$user['password'] = $this->convertPassword($user['password']);
+
+		$id = $this->getModel()->create($user);
+
+		$this->boot($id);
+
+		return AuthStatic::ACCOUNT_REGISTER_SUSSECC;
+	}
+
+	public function getModel() {
+		return (new $this->model)->with('role', 'brand', 'member');
+	}
+
+	public function getUser() {
+		return $this->user;
 	}
 
 	public function setPermissions($user, $role) {
@@ -151,38 +151,6 @@ class Auth {
 		return $this->user->id;
 	}
 
-	public function logout() {
-
-		if ($this->check()) {
-			session()->remove('auth');
-			$this->setLogin(false);
-		}
-
-		return true;
-	}
-
-	public function create($user) {
-		if ($this->getModel()->where('user_name', $user['phone'])
-			->orWhere('email', $user['phone'])
-			->orWhere('phone', $user['phone'])
-			->count()) {
-			return AuthStatic::ACCOUNT_HAS_BEEN_REGISTERED;
-		}
-
-		unset($user['repassword']);
-
-		$user['salt'] = $this->createSalt();
-		$user['password'] = $this->convertPassword($user['salt'], $user['password']);
-
-		$user['salt'] = encrypt($user['salt']);
-
-		$id = $this->getModel()->create($user);
-
-		$this->boot($id);
-
-		return AuthStatic::ACCOUNT_REGISTER_SUSSECC;
-	}
-
 	public function setLogin($isLogin) {
 		if ($this->isLogin) {
 			return true;
@@ -191,32 +159,28 @@ class Auth {
 		return $this->isLogin = $isLogin;
 	}
 
+	public function generateJsonWebToken() {
+		$key = $this->app->config->get('app.app_key');
+		$token = [
+			'iss' => $this->getId(),
+			'aud' => config('app.domain'),
+			'expire' => time() + 604800,
+		];
+
+		return JWT::encode($token, $key);
+	}
+
 	public function __call($method, $params) {
 		return call_user_func_array([$this->user, $method], $params);
 	}
 
-	private function createSalt($length = 8) {
-		$salt = '';
-
-		for ($i = 0; $i < $length; $i++) {
-			$salt .= chr(mt_rand(33, 126));
-		}
-
-		return $salt;
+	private function convertPassword($password) {
+		return password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
 	}
 
-	private function convertPassword($salt, $password) {
-		$index = round(ord($salt) / 21);
-		$start = substr($password, 0, $index);
-		$end = substr($password, $index);
+	private function decodeJsonWebToken($token) {
+		$key = $this->app->config->get('app.app_key');
 
-		return hash('sha256', $start . $salt . $end);
-	}
-
-	private function createRememberToken($account) {
-		$session_id = session()->getId();
-		$ip = request()->getClientIp();
-
-		return hash('sha256', $ip . $session_id . $account);
+		return JWT::decode($token, $key, ['HS256']);
 	}
 }

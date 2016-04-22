@@ -26,17 +26,15 @@ class Auth extends Model {
 	public function schema(Schema $table) {
 		$table->increment('id');
 		$table->member_id('integer');
+		$table->role_id('tinyinteger');
 		$table->wx('string');
 		$table->weibo('string');
 		$table->qq('string');
 		$table->user_name('string', 32, true);
 		$table->email('string', true);
 		$table->phone('string', 11, true);
-		$table->password('string', 64);
-		$table->salt('string');
-		$table->remember_token('string', true);
+		$table->password('string');
 		$table->permissions('string', true);
-		$table->role_id('tinyinteger');
 		$table->timeStamp();
 
 		$table->unique('phone', 'email', 'wx', 'weibo', 'qq');

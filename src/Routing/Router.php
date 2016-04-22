@@ -16,10 +16,14 @@ class Router {
 	 */
 	protected $routes;
 
+	protected $domain;
+
 	protected $supportMethod = ['get', 'post', 'delete', 'put', 'patch', 'option', 'trace', 'any'];
 
-	public function __construct() {
+	public function __construct($app) {
 		$this->routes = new RouteCollector;
+
+		$this->domain = $app->request->getScheme() . '://' . $app->request->getHost();
 	}
 
 	/**
@@ -62,7 +66,7 @@ class Router {
 			}
 
 			if ($url = $route[$method]->identifierMatch($params)) {
-				return 'http://' . config('app.domain', '') . $url;
+				return $this->domain . $url;
 			}
 
 			throw new InvalidArgumentException("Missing parameter in [{$routeName}] Route");

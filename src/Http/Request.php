@@ -11,6 +11,26 @@ class Request extends SymfonyRequest {
 		return $this->getMethod();
 	}
 
+	/**
+	 * Get the URL (no query string) for the request.
+	 *
+	 * @return string
+	 */
+	public function url() {
+		return rtrim(preg_replace('/\?.*/', '', $this->getUri()), '/');
+	}
+
+	/**
+	 * Get the full URL for the request.
+	 *
+	 * @return string
+	 */
+	public function fullUrl() {
+		$query = $this->getQueryString();
+
+		return $query ? $this->url() . '?' . $query : $this->url();
+	}
+
 	public function path() {
 		return $this->getPathinfo();
 	}
@@ -21,6 +41,16 @@ class Request extends SymfonyRequest {
 
 	public function isAjax() {
 		return $this->isXmlHttpRequest();
+	}
+
+	public function isWechatApp() {
+		$ua = $this->server->get('HTTP_USER_AGENT');
+
+		if (preg_match('/MicroMessenger\/([\d.]+)/', $ua, $match)) {
+			return true;
+		}
+
+		return false;
 	}
 
 	public function all() {
