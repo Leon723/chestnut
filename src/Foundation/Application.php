@@ -9,6 +9,7 @@ use Chestnut\Http\Response;
 use Chestnut\Support\Container;
 use Chestnut\Support\File;
 use Chestnut\Support\Parameter;
+use Chestnut\Support\Reflection\Reflector;
 use Chestnut\View\View as ViewContract;
 use View;
 
@@ -186,8 +187,13 @@ class Application extends Container implements ContainerContract {
 		View::addGlobal('__current', $this->current->getIdentifier());
 
 		try {
+			list($controller, $parameters) = $this->current->dispatch();
+
+			$reflector = new Reflector($controller);
+			$reflector->inject($parameters, $this);
+
 			ob_start();
-			$object = $this->current->dispatch($this);
+			$object = $reflector->resolve();
 			$result = ob_get_clean();
 
 			if (!$object && !$result) {

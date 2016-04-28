@@ -4,6 +4,8 @@ namespace Chestnut\Database\Nut;
 use Chestnut\Database\Query\Query;
 use Chestnut\Database\Schema\MysqlSchema;
 use DB;
+use InvalidArgumentException;
+use Log;
 
 /**
  * @author Liyang Zhang <zhangliyang@zhangliyang.name>
@@ -98,6 +100,10 @@ class NutQuery {
 
 		$result = $this->query->insert($insert);
 
+		if (!$this->model->withoutLog) {
+			Log::write($insert);
+		}
+
 		$this->model->fireEvent('afterSave');
 
 		$this->model->setExists(true);
@@ -113,6 +119,12 @@ class NutQuery {
 		if (is_null($create)) {
 			return false;
 		}
+
+		array_walk($create, function ($val, $key, $fillable) {
+			if (!in_array($key, $fillable)) {
+				throw new InvalidArgumentException("Can't create {$this->model->getClass()} with column: '{$key}'");
+			}
+		}, $this->model->getFillable());
 
 		$instance = $this->model->newInstance($create);
 
@@ -136,6 +148,10 @@ class NutQuery {
 
 		$result = $this->query->update($update);
 
+		if (!$this->model->withoutLog) {
+			Log::write($update, 'update');
+		}
+
 		$this->model->fireEvent('afterSave');
 
 		return $result;
@@ -151,6 +167,12 @@ class NutQuery {
 		}
 
 		is_array($id) ? $this->wherePrimaries($id) : $this->wherePrimary($id);
+
+		$result = $this->query->delete();
+
+		if (!$this->model->withoutLog) {
+			Log::write(compact('id'), 'delete');
+		}
 
 		return $this->query->delete();
 	}
@@ -181,7 +203,7 @@ class NutQuery {
 	public function getModels($columns = ['*']) {
 		$this->model->fireEvent('beforeGet', ['query' => $this]);
 
-		$result = $this->query->get();
+		$result = $this->query->get($columns);
 
 		return $this->model->injectCollection($result);
 	}

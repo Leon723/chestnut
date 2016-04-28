@@ -4,7 +4,7 @@ namespace Chestnut\Log;
 use Auth;
 
 class Log {
-	public static function write($modifies) {
+	public static function write($modifies, $operation = 'insert') {
 		if (empty($modifies)) {
 			return false;
 		}
@@ -17,8 +17,8 @@ class Log {
 			array_push($log_content, [config("lang.{$key}", $key) => $value]);
 		}
 
-		$log_content = serialize($log_content);
+		$log_content = json_encode($log_content);
 
-		Model\Log::create(compact('user_id', 'module', 'log_content'));
+		Model\Log::create(compact('user_id', 'module', 'log_content', 'operation'));
 	}
 }

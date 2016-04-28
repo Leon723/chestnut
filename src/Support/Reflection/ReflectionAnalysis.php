@@ -2,6 +2,7 @@
 namespace Chestnut\Support\Reflection;
 
 use Closure;
+use Exception;
 use ReflectionClass;
 use ReflectionFunction;
 use ReflectionMethod;
@@ -12,7 +13,7 @@ use ReflectionMethod;
 class ReflectionAnalysis {
 	public static function analysis($object, $method = null) {
 		if (!is_null($method) && !method_exists($object, $method)) {
-			return false;
+			throw new Exception("Call to undefined method {$object}::{$method}");
 		}
 
 		if ($object instanceof Closure) {

@@ -160,6 +160,10 @@ abstract class Model {
 		return $this->table ? $this->table : to_underline($modelName);
 	}
 
+	public function getFillable() {
+		return $this->fill ? $this->fill : [];
+	}
+
 	public function registerEvent($event, $method = null) {
 		if (is_null($method)) {
 			$method = $event;
@@ -194,7 +198,7 @@ abstract class Model {
 			$this->dirty = new Collection;
 		}
 
-		if ($this->$key !== $this->origin->get($key)) {
+		if ($this->$key !== $this->origin->get($key) || $this->dirty->has($key)) {
 			$this->dirty->set($key, $value);
 		}
 	}
@@ -223,6 +227,10 @@ abstract class Model {
 		}
 
 		return $this->properties->has($key);
+	}
+
+	public function toArray() {
+		return $this->properties->toArray();
 	}
 
 	public function __call($method, $params) {

@@ -48,8 +48,12 @@ class Reflector {
 	}
 
 	public function analysis() {
-		$this->type = ReflectionAnalysis::analysis($this->object, $this->method);
-		$this->dependencies = ReflectionAnalysis::getDependencies($this->object, $this->method);
+		try {
+			$this->type = ReflectionAnalysis::analysis($this->object, $this->method);
+			$this->dependencies = ReflectionAnalysis::getDependencies($this->object, $this->method);
+		} catch (Exception $e) {
+			throw $e;
+		}
 	}
 
 	public function inject($params = [], ContainerContract $c = null) {
@@ -99,9 +103,6 @@ class Reflector {
 	}
 
 	public function resolve() {
-		// if (!$this->type) {
-		// 	return false;
-		// }
 
 		if (!$this->injected()) {
 			throw new \RuntimeException('This builder has not inject dependencies');

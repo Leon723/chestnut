@@ -3,9 +3,7 @@ namespace Chestnut\Routing;
 
 use ArrayAccess;
 use Chestnut\Http\Request;
-use Chestnut\Support\Container as Container;
 use Chestnut\Support\Parameter;
-use Chestnut\Support\Reflection\Reflector;
 use Closure;
 
 /**
@@ -95,7 +93,7 @@ class Route implements ArrayAccess {
 		return true;
 	}
 
-	public function dispatch(Container $app) {
+	public function dispatch() {
 		$controller = $this['controller'];
 
 		if (isset($this['namespace']) && is_array($this['namespace']) && !$controller instanceof Closure) {
@@ -104,11 +102,7 @@ class Route implements ArrayAccess {
 			$controller = $this['namespace'] . '\\' . $controller;
 		}
 
-		$builder = new Reflector($controller);
-
-		$builder->inject($this['parameters'], $app);
-
-		return $builder->resolve();
+		return [$controller, $this['parameters']];
 	}
 
 	/**
