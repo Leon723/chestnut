@@ -14,7 +14,7 @@ class Auth extends Model {
 		'email',
 		'password',
 		'salt',
-		'role',
+		'role_id',
 	];
 
 	protected $relation = [

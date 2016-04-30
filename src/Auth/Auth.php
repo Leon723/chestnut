@@ -132,7 +132,7 @@ class Auth {
 			return 'admin.dashboard';
 		}
 
-		return key($this->permissions);
+		return reset($this->permissions);
 	}
 
 	public function getAccount() {
