@@ -43,6 +43,10 @@ class Filter {
 		return "number_format({$object}, {$type})";
 	}
 
+	private function decimal($object, $number = 2) {
+		return "sprintf('%.{$number}f', {$object})";
+	}
+
 	private function e($object, $type = 'e') {
 		return $this->escape($object, $type);
 	}

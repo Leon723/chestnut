@@ -68,7 +68,8 @@ class NutQuery {
 	}
 
 	public function first($columns = ['*']) {
-		return $this->take(1)->get($columns)->first();
+		$get = $this->take(1)->get($columns);
+		return $get ? $get->first() : $get;
 	}
 
 	public function one($id = null, $columns = ['*']) {
@@ -81,6 +82,10 @@ class NutQuery {
 
 	public function get($columns = ['*']) {
 		$models = $this->getModels($columns);
+
+		if (!$models->count()) {
+			return false;
+		}
 
 		if (isset($this->with)) {
 			foreach ($models as $model) {
