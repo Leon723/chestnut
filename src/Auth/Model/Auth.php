@@ -34,7 +34,7 @@ class Auth extends Model {
 		$table->email('string', 255, true);
 		$table->phone('string', 11, true);
 		$table->password('string');
-		$table->permissions('string', true);
+		$table->permissions('string')->nullable();
 		$table->timeStamp();
 
 		$table->unique('phone', 'email', 'wx', 'weibo', 'qq');

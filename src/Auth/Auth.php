@@ -53,7 +53,7 @@ class Auth {
 		}
 
 		$this->user = $user;
-		$this->setPermissions($user->permissions, $user->role->permission);
+		$this->setPermissions($user->getPermissions());
 
 		return $this->setLogin(true);
 	}
@@ -106,12 +106,7 @@ class Auth {
 		return $this->user;
 	}
 
-	public function setPermissions($user, $role) {
-		if (!is_array($user)) {
-			$user = explode(',', $user);
-		}
-
-		$permissions = array_merge($user, $role);
+	public function setPermissions($permissions) {
 		$this->permissions = array_filter($permissions);
 	}
 
@@ -128,7 +123,7 @@ class Auth {
 	}
 
 	public function getFirstPermission() {
-		if (key($this->permissions) == 'all') {
+		if (reset($this->permissions) == 'all') {
 			return 'admin.dashboard';
 		}
 
