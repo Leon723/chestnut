@@ -218,7 +218,10 @@ abstract class Model {
 
 	public function __unset($key) {
 		$this->properties->remove($key);
-		$this->dirty->remove($key);
+
+		if ($this->dirty) {
+			$this->dirty->remove($key);
+		}
 	}
 
 	public function __isset($key) {
