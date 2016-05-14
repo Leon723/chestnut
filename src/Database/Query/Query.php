@@ -90,7 +90,7 @@ class Query {
 	 * @var array
 	 */
 	protected $operators = [
-		'=', '<', '>', '<=', '>=', '<>', '!=',
+		'=', '<', '>', '<=', '>=', '<>', '!=', 'is', 'is not',
 		'like', 'like binary', 'not like', 'between', 'ilike',
 		'&', '|', '^', '<<', '>>',
 		'rlike', 'regexp', 'not regexp',
@@ -150,6 +150,10 @@ class Query {
 	public function where($column, $symbol = '=', $value = null, $link = 'and') {
 		if ($value === null && !in_array(strtoupper($symbol), $this->operators)) {
 			list($value, $symbol) = [$symbol, '='];
+		}
+
+		if (isset($this->where) && array_key_exists($column, $this->where)) {
+			return $this;
 		}
 
 		$this->addWhere($column, $symbol, $link);

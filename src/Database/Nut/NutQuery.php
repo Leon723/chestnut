@@ -17,7 +17,7 @@ class NutQuery {
 
 	protected $pass = [
 		'insert', 'update', 'delete', 'count', 'lastQueryString',
-		'getWhere', 'getBinds', 'isTableExists',
+		'getWhere', 'getBinds', 'getBindings', 'isTableExists',
 	];
 
 	public function __construct(Query $query) {
@@ -173,20 +173,30 @@ class NutQuery {
 
 		is_array($id) ? $this->wherePrimaries($id) : $this->wherePrimary($id);
 
-		$result = $this->query->delete();
-
 		if (!$this->model->withoutLog) {
-			Log::write(compact('id'), 'delete');
+			Log::write(compact('id'), $this->model->isSoftDelete() ? 'softDelete' : 'delete');
 		}
 
-		return $this->query->delete();
+		if ($this->model->isSoftDelete()) {
+			$this->model->deleted_at = date('Y-m-d H:i:s');
+			$this->model->is_deleted = 1;
+
+			return $this->save();
+		} else {
+			return $this->query->delete();
+		}
 	}
 
 	public function count() {
 		$count = $this->model->newQuery();
-		$count = $this->injectWhere($count)->select(DB::raw('count(*) as count'))->one();
+		$result = $this->injectWhere($count)->select(DB::raw('count(*) as count'))->one();
 
-		return $count->count;
+		try {
+			return $result->count;
+		} catch (\Exception $e) {
+			var_dump($count->getBinds(), $result);
+			exit;
+		}
 	}
 
 	public function wherePrimary($value) {
@@ -207,6 +217,10 @@ class NutQuery {
 
 	public function getModels($columns = ['*']) {
 		$this->model->fireEvent('beforeGet', ['query' => $this]);
+
+		if ($this->model->isSoftDelete()) {
+			$this->where('is_deleted', 0);
+		}
 
 		$result = $this->query->get($columns);
 

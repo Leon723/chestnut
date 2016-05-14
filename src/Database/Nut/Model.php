@@ -28,6 +28,8 @@ abstract class Model {
 
 	protected $timestamp = true;
 
+	protected $softDelete = false;
+
 	protected $fill = [];
 
 	protected $hidden;
@@ -95,6 +97,10 @@ abstract class Model {
 
 	public function getDirty() {
 		return $this->dirty->toArray();
+	}
+
+	public function isSoftDelete() {
+		return $this->softDelete;
 	}
 
 	public function getRelation($key) {
