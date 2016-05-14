@@ -6,7 +6,7 @@ Chestnut PHP framework
 
 
 ```
-composer required "leon723/chestnut:^0.8.0"
+composer required "leon723/chestnut:^0.9.0"
 ```
 
 在项目根目录创建 index.php 并输入以下内容：
