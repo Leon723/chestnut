@@ -175,11 +175,15 @@ abstract class Model {
 			$method = $event;
 		}
 
-		static::$event->listen($this->getClass() . ".{$event}", $this, $method);
+		$hash_id = spl_object_hash($this);
+
+		static::$event->listen($this->getClass() . ".{$event}.{$hash_id}", $this, $method);
 	}
 
 	public function fireEvent($event, $params = []) {
-		return static::$event->fire($this->getClass() . '.' . $event, $params);
+		$hash_id = spl_object_hash($this);
+
+		return static::$event->fire($this->getClass() . '.' . $event . ".{$hash_id}", $params);
 	}
 
 	public function newQuery() {
