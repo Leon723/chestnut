@@ -3,12 +3,15 @@ namespace Chestnut\Routing;
 
 use Auth;
 use Chestnut\Error\Route\UndefinedRouteException;
+use Chestnut\Support\Reflection\Reflector;
 use InvalidArgumentException;
 
 /**
  * @author Liyang Zhang <zhangliyang@zhangliyang.name>
  */
 class Router {
+	protected $app;
+
 	/**
 	 * 路由存储
 	 *
@@ -21,6 +24,7 @@ class Router {
 	protected $supportMethod = ['get', 'post', 'delete', 'put', 'patch', 'option', 'trace', 'any'];
 
 	public function __construct($app) {
+		$this->app = $app;
 		$this->routes = new RouteCollector;
 
 		$this->domain = $app->request->getScheme() . '://' . $app->request->getHost();
@@ -34,13 +38,32 @@ class Router {
 	public function match($method, $uri) {
 		foreach ($this->getRoutes() as $index => $route) {
 			if (isset($route[$method]) && $route[$method]->match($method, $uri)) {
-				return $route[$method];
+				$result = $route[$method];
+
+				$this->registerMiddleware($result);
+				return $result;
 			}
 		}
 	}
 
 	public function getRoutes() {
 		return $this->routes->all();
+	}
+
+	public function registerMiddleware($route) {
+		if (isset($route['middleware'])) {
+			foreach ($route['middleware'] as $middleware) {
+				if (empty($middleware)) {
+					continue;
+				}
+
+				$reflector = new Reflector('App\\Middlewares\\' . $middleware);
+				$reflector->inject([], $this->app);
+				$middleware = $reflector->resolve();
+
+				$middleware->register();
+			}
+		}
 	}
 
 	public function url($routeName, $method = 'get') {

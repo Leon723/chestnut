@@ -88,8 +88,6 @@ class Route implements ArrayAccess {
 			return false;
 		}
 
-		$this->registerMiddleware();
-
 		return true;
 	}
 
@@ -255,18 +253,5 @@ class Route implements ArrayAccess {
 
 	private function setParameter($name, $value = null) {
 		$this->attributes->set("parameters.$name", $value);
-	}
-
-	public function registerMiddleware() {
-		if (isset($this['middleware'])) {
-			foreach ($this['middleware'] as $middleware) {
-				if (empty($middleware)) {
-					continue;
-				}
-
-				$middleware = 'App\\Middlewares\\' . $middleware;
-				(new $middleware)->register();
-			}
-		}
 	}
 }
