@@ -23,6 +23,6 @@ class Log extends Model {
 		$table->string('module');
 		$table->string('operation');
 		$table->log_content('text');
-		$table->timeStamp();
+		$table->timeStamps();
 	}
 }

@@ -99,7 +99,7 @@ class Auth {
 	}
 
 	public function getModel() {
-		return (new $this->model)->with('role', 'brand', 'member');
+		return (new $this->model);
 	}
 
 	public function getUser() {
@@ -108,6 +108,10 @@ class Auth {
 
 	public function setPermissions($permissions) {
 		$this->permissions = array_filter($permissions);
+	}
+
+	public function setWithRelations($with) {
+		$this->with = $with;
 	}
 
 	public function hasPermission($permission) {

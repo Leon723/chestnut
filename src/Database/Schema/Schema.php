@@ -79,7 +79,7 @@ abstract class Schema {
 	 * @param  string $update Update Column Name
 	 * @return null
 	 */
-	public function timeStamp($create = 'created_at', $update = 'updated_at') {
+	public function timeStamps($create = 'created_at', $update = 'updated_at') {
 		$this->addColumn($create, 'timestamp')->nullable(false)->defaults('CURRENT_TIMESTAMP');
 
 		$this->addColumn($update, 'timestamp')->nullable(false)->defaults('0');
@@ -91,7 +91,7 @@ abstract class Schema {
 	 * @return null
 	 */
 	public function softDelete($softDelete = 'deleted_at') {
-		$this->addColumn('is_deleted', 'tinyinteger', 1)->defaults(0);
+		$this->addColumn('is_deleted', 'tinyint', 1)->defaults(0);
 		$this->addColumn($softDelete, 'timestamp')->nullable();
 	}
 

@@ -17,7 +17,7 @@ class Role extends Model {
 		$table->increment('id');
 		$table->role_name('string');
 		$table->permission('string');
-		$table->timeStamp();
+		$table->timeStamps();
 		$table->unique('role_name');
 	}
 }
