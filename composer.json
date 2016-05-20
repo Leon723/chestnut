@@ -9,7 +9,7 @@
             "role": "DEVELOPER"
         }
     ],
-    "version":"0.9.4",
+    "version":"0.9.5",
     "minimum-stability": "dev",
     "require": {
         "php": ">=5.6.0",

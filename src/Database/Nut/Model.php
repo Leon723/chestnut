@@ -146,9 +146,19 @@ abstract class Model {
 			}
 
 			if ($instance) {
-				$result = $type == 'one' ? $instance->one() : $instance->get();
+				switch ($type) {
+				case 'many':
+					$result = $instance->get();
+					break;
+				case 'one':
+					$result = $instance->one();
+					break;
+				case 'count':
+					$result = $instance->count();
+					break;
+				}
 
-				return [$relationName, !$result || $result->count() == 0 ? false : $result];
+				return [$relationName, $result];
 			}
 		}
 
