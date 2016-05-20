@@ -74,13 +74,13 @@ class Column implements StringAble {
 
 	public function toString() {
 		$length = is_array($this->length) ? join(',', $this->length) : $this->length;
-		$type = in_array($this->type, $this->no_length) ? "{$this->type}" : "{$this->type}({$length})";
-		$nullable = $this->nullable ? '' : 'not null';
-		$primary = $this->primary ? 'primary key' : '';
-		$auto_increment = $this->auto_increment ? 'auto_increment' : '';
-		$default = empty($this->default) ? '' : 'default ' . "{$this->default}";
+		$type = in_array($this->type, $this->no_length) ? " {$this->type}" : " {$this->type}({$length})";
+		$nullable = $this->nullable ? '' : ' not null';
+		$primary = $this->primary ? ' primary key' : '';
+		$auto_increment = $this->auto_increment ? ' auto_increment' : '';
+		$default = is_null($this->default) ? '' : ' default ' . "{$this->default}";
 
-		return "`{$this->column}` {$type} {$nullable} {$primary} {$auto_increment} {$default}";
+		return "`{$this->column}`{$type}{$nullable}{$primary}{$auto_increment}{$default}";
 	}
 
 	public function __toString() {
