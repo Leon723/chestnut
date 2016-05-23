@@ -89,9 +89,10 @@ class MysqlSQLManager extends SQLManager {
 			return '';
 		}
 
-		$result = 'where ';
+		$result = '';
 
 		foreach ($wheres as $where => $config) {
+			$result .= $config['link'] . " ";
 			switch ($config['symbol']) {
 			case 'between':
 				$result .= "{$this->wrap($where)} {$config['symbol']} ? and ? ";
@@ -103,11 +104,9 @@ class MysqlSQLManager extends SQLManager {
 				$result .= "{$this->wrap($where)} {$config['symbol']} ? ";
 				break;
 			}
-
-			$result .= $config['link'] . " ";
 		}
 
-		return " " . rtrim(rtrim($result, ' and'), ' or');
+		return " where " . ltrim(ltrim($result, ' and'), ' or');
 	}
 
 	public function parseGroup($group) {

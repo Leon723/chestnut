@@ -244,8 +244,10 @@ if (!function_exists('has_permission')) {
 
 if (!function_exists('csrf_field')) {
 	function csrf_field() {
-		$csrf_token = Auth::getAccount() . time();
-		session('csrf_token', $csrf_token);
+		if (!session('csrf_token')) {
+			$csrf_token = app()->auth->getAccount() . time();
+			session('csrf_token', $csrf_token);
+		}
 
 		return '<input type="hidden" name="csrf_token" value="' . encrypt(session('csrf_token')) . '">';
 	}

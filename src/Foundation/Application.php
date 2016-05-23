@@ -163,10 +163,10 @@ class Application extends Container implements ContainerContract {
 
 		$this->dispatch();
 
-		$xsrf_token = time() . $this->auth->getAccount();
-
 		if (!$this->request->isAjax()) {
+			$xsrf_token = time() . $this->auth->getAccount();
 			session('xsrf_token', $xsrf_token);
+
 			cookie_remove('chestnut_xsrf_token');
 			cookie('chestnut_xsrf_token', $xsrf_token);
 		}
