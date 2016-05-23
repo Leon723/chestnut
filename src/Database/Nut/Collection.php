@@ -30,6 +30,20 @@ class Collection extends Parameter {
 		return count($compare) ? new static($compare) : [];
 	}
 
+	public function join($symbol, $key = null) {
+		$result = '';
+
+		$this->walk(function ($item) use (&$result, $symbol, $key) {
+			$result .= $item->{$key} . $symbol;
+		});
+
+		return $result;
+	}
+
+	public function walk($callback) {
+		array_walk($this->attributes, $callback);
+	}
+
 	public function toArray() {
 		return array_map(function ($value) {
 			if (is_object($value) && method_exists($value, 'toArray')) {

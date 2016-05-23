@@ -219,7 +219,7 @@ class Parameter implements ParameterContract, ArrayAccess, IteratorAggregate {
 	}
 
 	public function __isset($key) {
-		return $this->has($Key);
+		return $this->has($key);
 	}
 
 	public function getIterator() {
