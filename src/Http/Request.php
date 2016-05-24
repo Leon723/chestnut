@@ -26,15 +26,7 @@ class Request extends SymfonyRequest {
 	 * @return string
 	 */
 	public function fullUrl() {
-		$query = $this->getQueryString();
-
-		$url = $this->url();
-
-		if ($url == $this->getSchemeAndHttpHost()) {
-			$url .= '/';
-		}
-
-		return $query ? $url . '?' . $query : $url;
+		return $this->getSchemeAndHttpHost() . $this->getRequestUri();
 	}
 
 	public function path() {
