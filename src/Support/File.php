@@ -7,7 +7,7 @@ use Chestnut\Contract\Support\File as FileContract;
  * @author Liyang Zhang <zhangliyang@zhangliyang.name>
  */
 class File implements FileContract {
-	public static function readDir($path, $filter = 'php') {
+	public static function readDir($path, $filter = 'php', $sort = 'time') {
 		if (!is_dir($path)) {
 			return false;
 		}
@@ -17,11 +17,36 @@ class File implements FileContract {
 
 			while (false !== ($file = readdir($dir))) {
 				if (preg_match("/([\S\s]+?).$filter$/", $file)) {
-					$result[] = ['fileName' => basename($file, '.' . $filter), 'path' => $file];
+					$result[] = [
+						'fileName' => basename($file, '.' . $filter),
+						'path' => $file,
+						'size' => round((filesize($path . $file) / 1024), 2),
+						'time' => date("Y-m-d H:i:s", filemtime($path . $file)),
+					];
 				}
 			}
 
 			closedir($dir);
+
+			foreach ($result as $k => $v) {
+				$size[$k] = $v['size'];
+				$time[$k] = $v['time'];
+				$fileName[$k] = $v['fileName'];
+			}
+
+			if (!empty($result)) {
+				switch ($sort) {
+				case 'time':
+					array_multisort($time, SORT_DESC, SORT_STRING, $result); //按时间排序
+					break;
+				case 'name':
+					array_multisort($fileName, SORT_DESC, SORT_STRING, $result); //按名字排序
+					break;
+				case 'size':
+					array_multisort($size, SORT_DESC, SORT_NUMERIC, $result); //按大小排序
+					break;
+				}
+			}
 
 			return $result;
 		} else {

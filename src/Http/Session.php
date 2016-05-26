@@ -32,11 +32,16 @@ class Session extends SymfonySession {
 	public function setReferer() {
 		$referer = request()->server->get('HTTP_REFERER');
 
-		if ($referer != request()->path() && !$this->has('referer.' . request()->path())) {
-			$this->set('referer.' . request()->path(), $referer);
+		if ($referer
+			&& $referer != request()->fullUrl()
+			&& !$this->has('referer.' . request()->fullUrl())
+			&& request()->fullUrl() != $this->get('referer.' . $referer)) {
+			$this->set('referer.' . request()->fullUrl(), $referer);
 		}
 
-		$this->remove('referer.' . $referer);
+		if ($referer == $this->get('referer.' . $referer)) {
+			$this->remove('referer.' . $referer);
+		}
 	}
 
 	public function migrate($destroy = false, $lifetime = 86400) {

@@ -131,6 +131,10 @@ class MysqlSQLManager extends SQLManager {
 		$orderSQL = ' order by ';
 
 		foreach ($order as $column => $sort) {
+			if (is_array($sort)) {
+				$sort = join(', ' . $this->wrap($column) . ' ', $sort);
+			}
+
 			$orderSQL .= "{$this->wrap($column)} $sort,";
 		}
 

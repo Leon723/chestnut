@@ -58,6 +58,7 @@ class Application extends Container implements ContainerContract {
 
 	public function initConfig($basePath) {
 		$this->instance('config', new Parameter);
+		date_default_timezone_set($this->config->get('app.timezone', 'Asia/Chongqing'));
 
 		if (is_null($basePath)) {
 			$this->config->replace($this->getDefaultConfig());
@@ -75,10 +76,6 @@ class Application extends Container implements ContainerContract {
 					$this->config->set($configPath['fileName'], require $this->configPath($configPath['path']));
 				}
 			}
-		}
-
-		if ($this->config->has('app.timezone')) {
-			date_default_timezone_set($this->config->get('app.timezone', 'Asia/Chongqing'));
 		}
 	}
 

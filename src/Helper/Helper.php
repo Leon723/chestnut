@@ -176,12 +176,12 @@ if (!function_exists('redirect')) {
 }
 
 if (!function_exists('back')) {
-	function back() {
+	function back($size = '') {
 
-		$back = session('referer.' . request()->path());
+		$back = session('referer.' . request()->fullUrl());
 
 		if ($back) {
-			return '<a href="' . $back . '" class="btn icon-reply"> 返回</a>';
+			return '<a href="' . $back . '" class="btn icon-reply ' . $size . '"> 返回</a>';
 		} else {
 			return '<a class="btn disabled icon-reply"> 返回</a>';
 		}
@@ -190,7 +190,7 @@ if (!function_exists('back')) {
 
 if (!function_exists('goback')) {
 	function goback() {
-		$goback = session('referer.' . request()->path());
+		$goback = session('referer.' . request()->fullUrl());
 
 		return redirect($goback);
 	}
