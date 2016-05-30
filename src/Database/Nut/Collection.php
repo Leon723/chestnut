@@ -12,6 +12,16 @@ class Collection extends Parameter {
 		return reset($this->attributes);
 	}
 
+	public function sum($key) {
+		$result = 0;
+
+		$this->walk(function ($item) use (&$result, $key) {
+			$result += $item->{$key};
+		});
+
+		return $result;
+	}
+
 	public function compare($array) {
 		$compare = [];
 
