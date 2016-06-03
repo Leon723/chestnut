@@ -165,6 +165,10 @@ abstract class Model {
 		return [$relationName, false];
 	}
 
+	public function withDeleted() {
+		$this->softDelete = false;
+	}
+
 	public function getClass() {
 		return get_class($this);
 	}

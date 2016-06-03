@@ -233,6 +233,12 @@ class NutQuery {
 		return $this;
 	}
 
+	public function withDeleted() {
+		$this->model->withDeleted();
+
+		return $this;
+	}
+
 	public function paginate($perpage = 10, $columns = ['*']) {
 		$page = request('page', 0);
 
