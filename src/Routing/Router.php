@@ -94,6 +94,12 @@ class Router {
 
 			throw new InvalidArgumentException("Missing parameter in [{$routeName}] Route");
 		}
+
+		if (start_with($routeName, 'http://') || start_with($routeName, 'https://')) {
+			return $routeName;
+		}
+
+		return start_with($routeName, '/') ? $this->domain . $routeName : $this->domain . '/' . $routeName;
 	}
 
 	public function __call($method, $params) {
