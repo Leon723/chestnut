@@ -112,7 +112,13 @@ abstract class Model {
 	}
 
 	public function processRelations($withs) {
-		$relations = [];
+		if (!$this->relations) {
+			$this->relations = new Collection;
+		}
+
+		if (is_string($withs)) {
+			$withs = func_get_args();
+		}
 
 		foreach ($withs as $with => $callback) {
 			if (!$callback instanceof Closure) {
@@ -122,12 +128,8 @@ abstract class Model {
 
 			list($name, $relation) = $this->processRelation($with, $callback);
 
-			if ($relation) {
-				$relations[$name] = $relation;
-			}
+			$this->relations->set($name, $relation);
 		}
-
-		$this->relations = $relations;
 	}
 
 	public function processRelation($relationName, $callback) {
@@ -228,8 +230,8 @@ abstract class Model {
 	}
 
 	public function __get($key) {
-		if (isset($this->relations[$key])) {
-			return $this->relations[$key];
+		if ($this->relations && $this->relations->has($key)) {
+			return $this->relations->get($key);
 		}
 
 		return $this->properties->get($key);
