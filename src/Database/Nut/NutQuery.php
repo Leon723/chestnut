@@ -97,7 +97,9 @@ class NutQuery {
 	}
 
 	private function insert() {
-		$this->model->created_at = date('Y-m-d H:i:s');
+		if ($this->model->timestamp) {
+			$this->model->created_at = date('Y-m-d H:i:s');
+		}
 
 		$this->model->fireEvent('beforeSave');
 
@@ -147,7 +149,9 @@ class NutQuery {
 			$update = $this->model->getDirty();
 		}
 
-		$update['updated_at'] = date('Y-m-d H:i:s');
+		if ($this->model->timestamp) {
+			$update['updated_at'] = date('Y-m-d H:i:s');
+		}
 
 		$this->wherePrimary($id);
 
