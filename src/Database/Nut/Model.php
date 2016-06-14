@@ -26,7 +26,7 @@ abstract class Model {
 
 	protected $guard = true;
 
-	protected $timestamp = true;
+	public $timestamp = true;
 
 	protected $softDelete = false;
 
