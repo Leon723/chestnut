@@ -58,7 +58,7 @@ class Auth {
 		return $this->setLogin(true);
 	}
 
-	public function check($token) {
+	public function check($token = null) {
 		if (is_null($token)) {
 			return false;
 		}
