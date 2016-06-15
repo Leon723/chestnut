@@ -14,7 +14,7 @@ class Cache extends File {
 	}
 
 	public static function read($type, $fileName) {
-		if (!static::exists($type)) {
+		if (!static::exists(app()->cachePath() . $type)) {
 			return false;
 		}
 
@@ -24,7 +24,7 @@ class Cache extends File {
 	}
 
 	public static function write($type, $filename, $content) {
-		if (!static::exists($type)) {
+		if (!static::exists(app()->cachePath() . $type)) {
 			static::makeDir($type);
 		}
 
