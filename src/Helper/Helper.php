@@ -224,7 +224,7 @@ if (!function_exists('end_with')) {
 	function end_with($string, $end) {
 		if (is_array($end)) {
 			foreach ($end as $val) {
-				if (endWith($string, $val)) {
+				if (end_with($string, $val)) {
 					return true;
 				}
 			}

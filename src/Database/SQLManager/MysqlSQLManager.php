@@ -100,6 +100,9 @@ class MysqlSQLManager extends SQLManager {
 			case 'in':
 				$result .= "find_in_set({$this->wrap($where)}, ?) ";
 				break;
+			case 'not in':
+				$result .= "!find_in_set({$this->wrap($where)}, ?) ";
+				break;
 			default:
 				$result .= "{$this->wrap($where)} {$config['symbol']} ? ";
 				break;
